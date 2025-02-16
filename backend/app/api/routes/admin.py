@@ -5,7 +5,7 @@ from datetime import datetime
 from app.api.deps import CurrentUser, SessionDep, GetAdminUser
 from app.models import (
     Client,  Visit, Notification, NotificationCreate,
-    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic
+    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, SubscriptionCreate
 )
 import uuid
 from typing import Optional, List, Dict, Any
@@ -85,64 +85,189 @@ def create_notification(
     return notification
 
 # Visit Management Routes
-@router.post("/visits/check-in", response_model=Visit) #  Need to check subscription validity & if the user already has a visit active
+@router.post("/visits/check-in", response_model=Visit)
 def check_in_client(
     *, session: SessionDep, current_user: GetAdminUser, client_id: uuid.UUID, check_in: Optional[datetime] = None
 ) -> Any:
-    """Check in a client using QR code"""
+    """
+    Check in a client using QR code.
+    Verifies that the client belongs to a group with an active subscription
+    and that the client does not already have an active visit.
+    """
     client = session.get(Client, client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
+    if not client.group_id:
+        raise HTTPException(status_code=400, detail="Client is not assigned to a group with a subscription")
+    
+    # Look up the active subscription via the client group
+    subscription = session.exec(
+        select(Subscription)
+        .where(Subscription.client_group_id == client.group_id)
+        .where(Subscription.is_active == True)
+    ).first()
+    if not subscription:
+        raise HTTPException(status_code=400, detail="No active subscription found for this client's group")
+  
+    
+    # Ensure there is no already active visit
+    active_visit = session.exec(
+        select(Visit)
+        .where(Visit.client_id == client_id)
+        .where(Visit.check_out == None)
+    ).first()
+    if active_visit:
+        raise HTTPException(status_code=400, detail="Client already has an active visit")
+    
     visit = Visit(
         client_id=client_id,
-        checked_in_by=current_user.id,
-        qr_scanned=True
+        check_in=check_in if check_in is not None else datetime.utcnow(),
+        subscription_id=subscription.id  # Linking the visit to the subscription if needed
+        
     )
-
-    if check_in is not None:
-        visit.check_in = check_in
+    
     session.add(visit)
     session.commit()
     session.refresh(visit)
     return visit
+
 
 @router.put("/visits/{visit_id}/check-out", response_model=Visit)
 def check_out_client(
     *, session: SessionDep, current_user: GetAdminUser, visit_id: uuid.UUID
 ) -> Any:
-    """Check out a client"""
+    """Check out a client and update the group subscription accordingly"""
     visit = session.get(Visit, visit_id)
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
     if visit.check_out:
-        raise HTTPException(status_code=401, detail="Visit has already ended")
+        raise HTTPException(status_code=400, detail="Visit has already ended")
+    
     check_out = datetime.utcnow()
     visit.check_out = check_out
-    visit.checked_out_by = current_user.id
+    # Optionally, add: visit.checked_out_by = current_user.id
     duration = (check_out - visit.check_in).total_seconds()
-    
-    visit.duration = duration
+    visit.duration = max(duration, 3600)  # Enforcing a minimum duration if required
     
     session.add(visit)
     session.commit()
     session.refresh(visit)
-
+    
+    # Retrieve the client to access the associated group subscription
+    client = session.get(Client, visit.client_id)
+    if not client or not client.group_id:
+        raise HTTPException(status_code=400, detail="Client is not assigned to a group with a subscription")
+    
     subscription = session.exec(
         select(Subscription)
-        .where(Subscription.client_id == visit.client_id)
+        .where(Subscription.client_group_id == client.group_id)
         .where(Subscription.is_active == True)
     ).first()
-
-    if subscription and subscription.remaining_time  >= duration:
-        subscription.remaining_time -= duration
-        if subscription.remaining_time <= 0:
+    
+    if subscription:
+        if subscription.remaining_time is not None and subscription.remaining_time >= duration:
+            subscription.remaining_time -= duration
+        else:
+            subscription.remaining_time = 0
+        if subscription.remaining_time is not None and subscription.remaining_time <= 0:
             subscription.is_active = False
         session.add(subscription)
         session.commit()
     
-    
     return visit
+
+
+@router.get("/check-qr", response_model=Visit)
+def check_qr_code(
+    *,
+    session: SessionDep,
+    current_user: GetAdminUser,
+    client_id: uuid.UUID,
+    qr_code_id: uuid.UUID
+) -> Any:
+    """
+    Read a QR code associated with a client.
+    If the client already has an active visit, then check the visit out.
+    Otherwise, verify subscription validity and check the client in.
+    """
+    client = session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    scanned_qr = session.get(QRCode, qr_code_id)
+    if not scanned_qr:
+        raise HTTPException(status_code=404, detail="QR code not found")
+    
+    # Ensure that the QR code belongs to the client.
+    if scanned_qr.client_id != client.id:
+        raise HTTPException(status_code=400, detail="QR code does not belong to the client")
+    
+    active_visit = session.exec(
+        select(Visit)
+        .where(Visit.client_id == client_id)
+        .where(Visit.check_out == None)
+    ).first()
+    
+    if active_visit:
+        # Check out the active visit.
+        check_out_time = datetime.utcnow()
+        active_visit.check_out = check_out_time
+        # Optionally, add: active_visit.checked_out_by = current_user.id
+        duration = (check_out_time - active_visit.check_in).total_seconds()
+        active_visit.duration = duration
+
+        session.add(active_visit)
+        session.commit()
+        session.refresh(active_visit)
+        
+        if not client.group_id:
+            raise HTTPException(status_code=400, detail="Client is not assigned to a group with a subscription")
+        
+        subscription = session.exec(
+            select(Subscription)
+            .where(Subscription.client_group_id == client.group_id)
+            .where(Subscription.is_active == True)
+        ).first()
+        
+        if subscription:
+            if subscription.remaining_time is not None:
+                if subscription.remaining_time >= duration:
+                    subscription.remaining_time -= duration
+                else:
+                    subscription.remaining_time = 0
+            # If remaining_time is now 0 or less, deactivate the subscription
+            if subscription.remaining_time is not None and subscription.remaining_time <= 0:
+                subscription.is_active = False
+            session.add(subscription)
+            session.commit()
+        
+        return active_visit
+
+    else:
+        # No active visit – so verify subscription validity and check in.
+        if not client.group_id:
+            raise HTTPException(status_code=400, detail="Client is not assigned to a group with a subscription")
+        
+        subscription = session.exec(
+            select(Subscription)
+            .where(Subscription.client_group_id == client.group_id)
+            .where(Subscription.is_active == True)
+        ).first()
+        if not subscription:
+            raise HTTPException(status_code=400, detail="No active subscription found for this client's group")
+        
+        new_visit = Visit(
+            client_id=client_id,
+            check_in=datetime.utcnow(),
+            subscription_id=subscription.id
+        )
+        session.add(new_visit)
+        session.commit()
+        session.refresh(new_visit)
+        return new_visit
+    
+
 
 @router.get("/all-visits", response_model=list[VisitPublic])
 def get_all_visits(
@@ -173,7 +298,7 @@ def create_plan(
 ) -> Any:
     """Create a new service plan"""
     plan = Plan.model_validate(plan_in)
-    plan.created_by = current_user.id
+
     session.add(plan)
     session.commit()
     session.refresh(plan)
@@ -195,3 +320,25 @@ def approve_subscription(
     session.commit()
     session.refresh(subscription)
     return subscription
+
+
+
+
+@router.post("/subscriptions/force-create", response_model=Subscription)
+def force_create_subscription(
+    *, session: SessionDep, current_user: GetAdminUser, client_group_id: uuid.UUID, subscription_in: SubscriptionCreate
+) -> Any:
+    """Forces the creation of a subscription to a client group"""
+    subscription = Subscription.model_validate(subscription_in)
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    
+    session.add(subscription)
+    session.commit()
+    session.refresh(subscription)
+    return subscription
+
+
+
+# Get client_groups

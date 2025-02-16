@@ -7,7 +7,7 @@ from app.models import (
     Client, ClientCreate, ClientUpdate, ClientPublic, Message,
     Reservation, ReservationCreate, ReservationPublic,
     Subscription, SubscriptionCreate, SubscriptionPublic,
-    Payment, PaymentCreate, PaymentPublic, Visit, VisitPublic
+    Payment, PaymentCreate, PaymentPublic, Visit, VisitPublic, QRCode
 )
 
 router = APIRouter()
@@ -33,7 +33,6 @@ def register_child(
     client = Client.model_validate(client_in)
     client.guardian_id = current_user.id
     client.is_child = True
-    client.qr_code = generate_qr_code(client.id)
     session.add(client)
     session.commit()
     session.refresh(client)

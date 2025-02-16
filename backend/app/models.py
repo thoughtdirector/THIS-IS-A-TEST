@@ -119,6 +119,9 @@ class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
 
+class ClientGroupAdminLink(SQLModel, table=True):
+    client_group_id: uuid.UUID = Field(foreign_key="clientgroup.id", primary_key=True)
+    admin_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
 
 class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -128,6 +131,12 @@ class User(SQLModel, table=True):
     is_active: bool = True
     is_superuser: bool = False
     admin_user: Optional["AdminUser"] = Relationship(back_populates="user")
+    
+
+    client_groups: List["ClientGroup"] = Relationship(
+        link_model=ClientGroupAdminLink,
+        back_populates="admins"
+    )
 
    
 
@@ -173,6 +182,10 @@ class ClientUpdate(SQLModel):
 
 class Client(ClientBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    
+    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    group_id: Optional[uuid.UUID] = Field(default=None, foreign_key="clientgroup.id")
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     guardian_id: Optional[uuid.UUID] = Field(default=None, foreign_key="client.id")
@@ -184,9 +197,29 @@ class Client(ClientBase, table=True):
         back_populates="children",
         sa_relationship_kwargs={"remote_side": "Client.guardian_id"}
     )
-    subscriptions: List["Subscription"] = Relationship(back_populates="client")
+ 
     reservations: List["Reservation"] = Relationship(back_populates="client")
     visits: List["Visit"] = Relationship(back_populates="client")
+    group: Optional["ClientGroup"] = Relationship(back_populates="clients")
+    qr_codes: List["QRCode"] = Relationship(back_populates="client")
+
+
+class ClientGroup(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name:str = Field(max_length=255)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+  
+    clients: List[Client] = Relationship(back_populates="group")
+    
+    # Relationship: the subscription that applies to the whole group
+    subscriptions: List["Subscription"] = Relationship(back_populates="client_group")
+    
+    # Relationship: the user(s) (e.g. parent accounts) that can administer the group
+    admins: List[User] = Relationship(
+        link_model=ClientGroupAdminLink,
+        back_populates="client_groups"
+    )
 
 class PlanUpdate(SQLModel):
     name: Optional[str] = Field(default=None, max_length=255)
@@ -218,9 +251,12 @@ class Plan(SQLModel, table=True):
     max_classes: Optional[int] = None
     is_active: bool = True
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
+    #created_by_id: uuid.UUID = Field(default=None, foreign_key="user.id")
+    
 
 class SubscriptionCreate(SQLModel):
-    client_id: uuid.UUID
+    # Instead of a single client, a subscription is now linked to a client group.
+    client_group_id: uuid.UUID
     plan_id: uuid.UUID
     start_date: datetime
     end_date: datetime
@@ -230,28 +266,30 @@ class SubscriptionCreate(SQLModel):
 
 class SubscriptionPublic(SQLModel):
     id: uuid.UUID
-    client_id: uuid.UUID
+    client_group_id: uuid.UUID
     plan_id: uuid.UUID
     start_date: datetime
     end_date: datetime
-    remaining_time : Optional[float] = None
+    remaining_time: Optional[float] = None
     remaining_classes: Optional[int] = None
     is_active: bool
     total_cost: float
 
 class Subscription(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    client_id: uuid.UUID = Field(foreign_key="client.id")
+    # Changed: subscription now belongs to a client group.
+    client_group_id: uuid.UUID = Field(foreign_key="clientgroup.id")
     plan_id: uuid.UUID = Field(foreign_key="plan.id")
     start_date: datetime
     end_date: datetime
-    remaining_time : Optional[float] = None
+    remaining_time: Optional[float] = None
     remaining_classes: Optional[int] = None
     is_active: bool = True
     total_cost: float
-    client: Client = Relationship(back_populates="subscriptions")
-    plan: Plan = Relationship(back_populates="subscriptions")
-
+    
+    # New relationships
+    client_group: ClientGroup = Relationship(back_populates="subscriptions")
+    plan: "Plan" = Relationship(back_populates="subscriptions")
 
 class ReservationCreate(SQLModel):
     client_id: uuid.UUID 
@@ -368,5 +406,9 @@ class AdminAction(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     admin: AdminUser = Relationship(back_populates="actions")
 
+class QRCode(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    client_id: uuid.UUID = Field(foreign_key="client.id")
+    client: "Client" = Relationship(back_populates="qr_codes")
 #class MetricsLog(SQLModel, table=True):
  #   metric:str
