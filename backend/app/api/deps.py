@@ -75,6 +75,6 @@ async def get_admin_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not have administrative privileges"
         )
-    return admin_user
+    return current_user
 
-GetAdminUser = Depends(get_admin_user)
+GetAdminUser = Annotated[User,Depends(get_admin_user)]

@@ -4,15 +4,15 @@ from typing import Any
 from datetime import datetime
 from app.api.deps import CurrentUser, SessionDep, GetAdminUser
 from app.models import (
-    Client,  Visit, Notification,
-    Plan, Subscription, Payment
+    Client,  Visit, Notification, NotificationCreate,
+    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic
 )
 import uuid
+from typing import Optional, List, Dict, Any
 
-admin_router = APIRouter()
+router = APIRouter()
 
-# Dashboard Routes
-@admin_router.get("/dashboard/metrics")
+@router.get("/dashboard/metrics")
 def get_dashboard_metrics(
     session: SessionDep, current_user: GetAdminUser
 ) -> Any:
@@ -36,14 +36,31 @@ def get_dashboard_metrics(
         .where(func.date(Payment.created_at) == func.date(current_date))
     ).one() or 0
     
+    # Visits by day (for chart data)
+    visits_grouped = session.exec(
+        select(
+            func.date(Visit.check_in).label("day"),
+            func.count(Visit.id).label("visit_count")
+        )
+        .group_by(func.date(Visit.check_in))
+    ).all()
+    
+    # Convert the result into a list of dictionaries
+    visits_chart_data = [
+        {"day": day, "visit_count": visit_count}
+        for day, visit_count in visits_grouped
+    ]
+    
     return {
         "active_clients": active_clients,
         "current_visits": current_visits,
-        "today_revenue": today_revenue
+        "today_revenue": today_revenue,
+        "visits_by_day": visits_chart_data,
     }
 
+
 # Client Management Routes
-@admin_router.get("/clients", response_model=list[ClientPublic])
+@router.get("/clients", response_model=list[ClientPublic])
 def get_all_clients(
     session: SessionDep,
     current_user: GetAdminUser,
@@ -55,7 +72,7 @@ def get_all_clients(
     clients = session.exec(statement).all()
     return clients
 
-@admin_router.post("/notifications", response_model=Notification)
+@router.post("/notifications", response_model=Notification)
 def create_notification(
     *, session: SessionDep, current_user: GetAdminUser, notification_in: NotificationCreate
 ) -> Any:
@@ -68,9 +85,9 @@ def create_notification(
     return notification
 
 # Visit Management Routes
-@admin_router.post("/visits/check-in", response_model=Visit)
+@router.post("/visits/check-in", response_model=Visit) #  Need to check subscription validity & if the user already has a visit active
 def check_in_client(
-    *, session: SessionDep, current_user: GetAdminUser, client_id: uuid.UUID
+    *, session: SessionDep, current_user: GetAdminUser, client_id: uuid.UUID, check_in: Optional[datetime] = None
 ) -> Any:
     """Check in a client using QR code"""
     client = session.get(Client, client_id)
@@ -82,12 +99,15 @@ def check_in_client(
         checked_in_by=current_user.id,
         qr_scanned=True
     )
+
+    if check_in is not None:
+        visit.check_in = check_in
     session.add(visit)
     session.commit()
     session.refresh(visit)
     return visit
 
-@admin_router.put("/visits/{visit_id}/check-out", response_model=Visit)
+@router.put("/visits/{visit_id}/check-out", response_model=Visit)
 def check_out_client(
     *, session: SessionDep, current_user: GetAdminUser, visit_id: uuid.UUID
 ) -> Any:
@@ -95,10 +115,12 @@ def check_out_client(
     visit = session.get(Visit, visit_id)
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
-    visit.check_out = datetime.utcnow()
+    if visit.check_out:
+        raise HTTPException(status_code=401, detail="Visit has already ended")
+    check_out = datetime.utcnow()
+    visit.check_out = check_out
     visit.checked_out_by = current_user.id
-    session.refresh(visit)
-    duration = (visit.check_out - visit.check_in)
+    duration = (check_out - visit.check_in).total_seconds()
     
     visit.duration = duration
     
@@ -112,9 +134,9 @@ def check_out_client(
         .where(Subscription.is_active == True)
     ).first()
 
-    if subscription and subscription.remaining_hours >= duration:
-        subscription.remaining_hours -= duration
-        if subscription.remaining_hours <= 0:
+    if subscription and subscription.remaining_time  >= duration:
+        subscription.remaining_time -= duration
+        if subscription.remaining_time <= 0:
             subscription.is_active = False
         session.add(subscription)
         session.commit()
@@ -122,7 +144,30 @@ def check_out_client(
     
     return visit
 
-@admin_router.post("/plans", response_model=Plan)
+@router.get("/all-visits", response_model=list[VisitPublic])
+def get_all_visits(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    statement = select(Visit).offset(skip).limit(limit)
+    visits = session.exec(statement).all()
+    return visits
+
+@router.get("/all-active-visits", response_model=list[VisitPublic])
+def get_all_active_visits(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    statement = select(Visit).where(Visit.check_out == None).offset(skip).limit(limit)
+    visits = session.exec(statement).all()
+    return visits
+   
+
+@router.post("/plans", response_model=Plan)
 def create_plan(
     *, session: SessionDep, current_user: GetAdminUser, plan_in: PlanCreate
 ) -> Any:
@@ -134,7 +179,7 @@ def create_plan(
     session.refresh(plan)
     return plan
 
-@admin_router.put("/subscriptions/{subscription_id}/approve", response_model=Subscription)
+@router.put("/subscriptions/{subscription_id}/approve", response_model=Subscription)
 def approve_subscription(
     *, session: SessionDep, current_user: GetAdminUser, subscription_id: uuid.UUID
 ) -> Any:

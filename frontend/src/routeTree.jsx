@@ -65,40 +65,40 @@ const activateOrgRoute = createRoute({
 
 // Routes that require organization activation
 const adminRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/admin',
   component: Admin,
   validateSearch: (search) => usersSearchSchema.parse(search),
 })
 
 const chatbotRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/chat',
   component: Chatbot,
 })
 
 const projectRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/project',
   component: Project,
 })
 
 
 const dashboardRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/',
   component: Dashboard,
 })
 
 const chatListRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/chatlist',
   component: ChatList,
   validateSearch: (search) => pageSearchSchema.parse(search),
 })
 
 const projectListRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/projectlist',
   component: ProjectList,
   validateSearch: (search) => pageSearchSchema.parse(search),
@@ -118,7 +118,7 @@ const organizationListRoute = createRoute({
 })
 
 const itemsRoute = createRoute({
-  getParentRoute: () => activateOrgRoute,
+  getParentRoute: () => layoutRoute,
   path: '/items',
   component: Items,
   validateSearch: (search) => itemsSearchSchema.parse(search),
@@ -154,17 +154,12 @@ const routeTree = rootRoute.addChildren([
   layoutRoute.addChildren([
     activateOrgRoute.addChildren([
       adminRoute,
-      
       dashboardRoute,
       chatbotRoute,
-      projectRoute,
-      chatListRoute,
-      projectListRoute,
       
     ]),
     settingsRoute,
-    organizationListRoute,
-    itemsRoute,
+
   ]),
   indexRoute,
   loginRoute,

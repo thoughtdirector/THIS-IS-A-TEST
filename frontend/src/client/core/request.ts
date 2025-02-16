@@ -42,17 +42,7 @@ export const base64 = (str: string): string => {
   }
 }
 
-const getOrganizationId = (options: ApiRequestOptions): string | undefined => {
-  if (options.organizationId) {
-    return options.organizationId;
-  }
-  
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage.getItem('organization_id') || undefined;
-  }
-  
-  return undefined;
-};
+
 
 export const getQueryString = (params: Record<string, unknown>): string => {
   const qs: string[] = []
@@ -93,12 +83,9 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
     })
 
   const url = new URL(config.BASE + path);
-  const organizationId = getOrganizationId(options);
+ 
 
-  // Add organizationId as a query parameter for GET requests
-  if (options.method?.toUpperCase() === 'GET' && organizationId) {
-    url.searchParams.append('organization_id', organizationId);
-  }
+
 
   if (options.query) {
     Object.entries(options.query).forEach(([key, value]) => {
@@ -206,30 +193,17 @@ export const getHeaders = async (
 }
 
 export const getRequestBody = (options: ApiRequestOptions): unknown => {
-  const organizationId = getOrganizationId(options);
+ 
   
   if (options.body) {
-    // For POST requests, include organizationId in the body
+  
     
-    if (options.method?.toUpperCase() === 'POST' && organizationId && options.useOrg) {
-      if (typeof options.body === 'object' && options.body !== null) {
-        return {
-          ...options.body,
-          organization_id: organizationId,
-        };
-      } else {
-        console.warn('Cannot add organization_id to non-object body');
-        return options.body;
-      }
-    }
+    
     
     return options.body;
   }
-  // If it's a POST request with no body but has organizationId, create a body
-  if (options.method?.toUpperCase() === 'POST' && organizationId && options.useOrg) {
-    
-    return { organization_id: organizationId };
-  }
+
+  
   return undefined;
 }
 
@@ -244,7 +218,7 @@ export const sendRequest = async <T>(
   axiosClient: AxiosInstance,
 ): Promise<AxiosResponse<T>> => {
   const controller = new AbortController()
-  const organizationId = getOrganizationId(options);
+ 
 
   let requestConfig: AxiosRequestConfig = {
     data: body ?? formData,
@@ -255,14 +229,7 @@ export const sendRequest = async <T>(
     withCredentials: config.WITH_CREDENTIALS,
   }
 
-  // If it's a GET request, ensure organizationId is in the URL
-  if (options.method?.toUpperCase() === 'GET' && organizationId) {
-    const urlObj = new URL(url);
-    if (!urlObj.searchParams.has('organization_id')) {
-      urlObj.searchParams.append('organization_id', organizationId);
-      requestConfig.url = urlObj.toString();
-    }
-  }
+
 
   onCancel(() => controller.abort())
 

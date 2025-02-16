@@ -7,7 +7,7 @@ from app.models import (
     Client, ClientCreate, ClientUpdate, ClientPublic, Message,
     Reservation, ReservationCreate, ReservationPublic,
     Subscription, SubscriptionCreate, SubscriptionPublic,
-    Payment, PaymentCreate, PaymentPublic, Visit
+    Payment, PaymentCreate, PaymentPublic, Visit, VisitPublic
 )
 
 router = APIRouter()
@@ -95,3 +95,5 @@ def get_visits(
     ).offset(skip).limit(limit)
     visits = session.exec(statement).all()
     return visits
+
+

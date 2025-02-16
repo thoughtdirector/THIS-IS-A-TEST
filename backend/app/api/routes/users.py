@@ -2,8 +2,8 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
-
+from sqlmodel import col, delete, func, select, SQLModel
+from pydantic import EmailStr
 from app import crud
 from app.api.deps import (
     CurrentUser,
@@ -23,8 +23,9 @@ from app.models import (
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
-    Organization,
-    OrganizationUser
+    Client,
+    ClientCreate
+
 )
 from app.utils.utils import generate_new_account_email, send_email
 
@@ -143,8 +144,48 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     return Message(message="User deleted successfully")
 
 
-@router.post("/signup", response_model=UserPublic)
+@router.post("/signup-user", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+    """
+    Create new user without the need to be logged in.
+    """
+    raise HTTPException(
+            status_code=404,
+            detail="",
+        )
+    user = crud.get_user_by_email(session=session, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this email already exists in the system",
+        )
+    user_create = UserCreate.model_validate(user_in)
+    user = crud.create_user(session=session, user_create=user_create)
+    
+  
+    session.flush()  # This assigns an id to personal_org if it wasn't set
+
+    # Associate the user with the personal organization
+ 
+ 
+
+    # Commit the changes
+    session.commit()
+
+    # Refresh the user object to include the new organization
+    session.refresh(user)
+    
+
+    return user
+
+class ClientRegister(SQLModel):
+    email: EmailStr 
+    password: str 
+    full_name: str 
+    phone: str 
+
+@router.post("/signup", response_model=UserPublic)
+def register_client(session: SessionDep, user_in: ClientRegister) -> Any:
     """
     Create new user without the need to be logged in.
     """
@@ -156,25 +197,19 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
         )
     user_create = UserCreate.model_validate(user_in)
     user = crud.create_user(session=session, user_create=user_create)
-    personal_org = Organization(
-        id=uuid.uuid4(),
-        name=f"{user.full_name}'s Personal Organization",
-        description="Personal workspace",
-        email=user.email,
-        is_personal=True,
-        is_active=True
-    )
-    session.add(personal_org)
+    
+  
     session.flush()  # This assigns an id to personal_org if it wasn't set
 
     # Associate the user with the personal organization
-    org_user = OrganizationUser(
-        organization_id=personal_org.id,
-        user_id=user.id,
-        roles=["owner"]
-    )
-    session.add(org_user)
-
+ 
+ 
+    client = Client.model_validate(user_in)
+    client.is_child = False
+    session.add(client)
+    session.commit()
+    session.refresh(client)
+    
     # Commit the changes
     session.commit()
 
@@ -182,7 +217,7 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     session.refresh(user)
 
     return user
-    return user
+
 
 
 @router.get("/{user_id}", response_model=UserPublic)

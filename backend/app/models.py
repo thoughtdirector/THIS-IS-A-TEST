@@ -140,6 +140,37 @@ class ClientBase(SQLModel):
     is_child: bool = False
     qr_code: Optional[str] = None
 
+class ClientPublic(SQLModel):
+    id: uuid.UUID
+    full_name: str
+    email: EmailStr
+    phone: str
+    is_child: bool
+    qr_code: Optional[str]
+
+
+
+class ClientCreate(SQLModel):
+    full_name: str = Field(max_length=255)
+    email: EmailStr = Field(index=True)
+    phone: str = Field(max_length=20)
+    is_active: bool = True
+    is_child: bool = False
+    qr_code: Optional[str] = None
+    guardian_id: Optional[uuid.UUID] = None  # Added to allow linking a child to a guardian
+    children: List[uuid.UUID] = Field(default_factory=list)
+
+class ClientUpdate(SQLModel):
+    full_name: Optional[str] = Field(default=None, max_length=255)
+    email: Optional[EmailStr] = Field(default=None, index=True)
+    phone: Optional[str] = Field(default=None, max_length=20)
+    is_active: Optional[bool] = None
+    is_child: Optional[bool] = None
+    qr_code: Optional[str] = None
+    guardian_id: Optional[uuid.UUID] = None  # Added to allow updating the guardian reference
+    children: Optional[List[uuid.UUID]] = None
+
+
 class Client(ClientBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -157,6 +188,25 @@ class Client(ClientBase, table=True):
     reservations: List["Reservation"] = Relationship(back_populates="client")
     visits: List["Visit"] = Relationship(back_populates="client")
 
+class PlanUpdate(SQLModel):
+    name: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    price: Optional[float] = None
+    duration_hours: Optional[int] = None
+    duration_days: Optional[int] = None
+    is_class_plan: Optional[bool] = None
+    max_classes: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class PlanCreate(SQLModel):
+    name: str = Field(max_length=255)
+    description: str = Field(max_length=1000)
+    price: float
+    duration_hours: Optional[int] = None  # For hourly plans
+    duration_days: Optional[int] = None   # For subscription length
+    is_class_plan: bool = False
+    max_classes: Optional[int] = None
+
 class Plan(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=255)
@@ -169,13 +219,33 @@ class Plan(SQLModel, table=True):
     is_active: bool = True
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
 
+class SubscriptionCreate(SQLModel):
+    client_id: uuid.UUID
+    plan_id: uuid.UUID
+    start_date: datetime
+    end_date: datetime
+    total_cost: float
+    remaining_time: Optional[float] = None
+    remaining_classes: Optional[int] = None
+
+class SubscriptionPublic(SQLModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    plan_id: uuid.UUID
+    start_date: datetime
+    end_date: datetime
+    remaining_time : Optional[float] = None
+    remaining_classes: Optional[int] = None
+    is_active: bool
+    total_cost: float
+
 class Subscription(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     client_id: uuid.UUID = Field(foreign_key="client.id")
     plan_id: uuid.UUID = Field(foreign_key="plan.id")
     start_date: datetime
     end_date: datetime
-    remaining_hours: Optional[float] = None
+    remaining_time : Optional[float] = None
     remaining_classes: Optional[int] = None
     is_active: bool = True
     total_cost: float
@@ -183,6 +253,24 @@ class Subscription(SQLModel, table=True):
     plan: Plan = Relationship(back_populates="subscriptions")
 
 
+class ReservationCreate(SQLModel):
+    client_id: uuid.UUID 
+    date: datetime
+    duration_hours: float
+    subscription_id: Optional[uuid.UUID]
+    
+class ReservationPublic(SQLModel):
+    client_id: uuid.UUID 
+    date: datetime
+    duration_hours: float
+    subscription_id: Optional[uuid.UUID]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ReservationUpdate(SQLModel):
+    date: Optional[datetime] = None
+    duration_hours: Optional[float] = None
+    status: Optional[str] = Field(default=None, max_length=20)
+    subscription_id: Optional[uuid.UUID] = None
 
 class Reservation(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -194,14 +282,44 @@ class Reservation(SQLModel, table=True):
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
     client: Client = Relationship(back_populates="reservations")
 
+class VisitCreate(SQLModel):
+    client_id: uuid.UUID
+    subscription_id: Optional[uuid.UUID] = None
+
+    check_in: Optional[datetime] = Field(default_factory=datetime.utcnow)
+ 
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+class VisitUpdate(SQLModel):
+    check_out: Optional[datetime] = None
+    duration: Optional[float] = None
+
+class VisitPublic(SQLModel):
+    id: uuid.UUID
+    client_id: uuid.UUID 
+    check_in: datetime
+    check_out: Optional[datetime] = None
+    duration: Optional[float] = None  # in hours
+    subscription_id: Optional[uuid.UUID] 
+
+    notes: Optional[str]
+
+
 class Visit(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     client_id: uuid.UUID = Field(foreign_key="client.id")
     check_in: datetime = Field(default_factory=datetime.utcnow)
     check_out: Optional[datetime] = None
+    checked_out_by: Optional[uuid.UUID] = Field(foreign_key="user.id")
     duration: Optional[float] = None  # in hours
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
     client: Client = Relationship(back_populates="visits")
+    notes: Optional[str] = Field(default = None, max_length = 1024)
+
+class NotificationCreate(SQLModel):
+    message: str
+    target_client_id: Optional[uuid.UUID] = Field(foreign_key="client.id", default=None)
+    is_broadcast: bool = False
 
 class Notification(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -210,6 +328,18 @@ class Notification(SQLModel, table=True):
     created_by: uuid.UUID = Field(foreign_key="user.id")
     target_client_id: Optional[uuid.UUID] = Field(foreign_key="client.id", default=None)
     is_broadcast: bool = False
+
+class PaymentCreate(SQLModel):
+    client_id: uuid.UUID
+    amount: float
+    payment_method: str = Field(max_length=50)
+    transaction_id: str = Field(max_length=255)
+    subscription_id: Optional[uuid.UUID] = None
+
+class PaymentPublic(SQLModel):
+    client_id: uuid.UUID
+    amount: float
+    status: str
 
 class Payment(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -237,3 +367,6 @@ class AdminAction(SQLModel, table=True):
     description: str = Field(max_length=1000)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     admin: AdminUser = Relationship(back_populates="actions")
+
+#class MetricsLog(SQLModel, table=True):
+ #   metric:str
