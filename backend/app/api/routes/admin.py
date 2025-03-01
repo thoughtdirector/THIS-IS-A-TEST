@@ -1,64 +1,18 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import select, func
+from sqlmodel import select, func, SQLModel, desc
 from typing import Any
+from datetime import timedelta
 from datetime import datetime
+
 from app.api.deps import CurrentUser, SessionDep, GetAdminUser
 from app.models import (
     Client,  Visit, Notification, NotificationCreate,
-    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, SubscriptionCreate
+    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, SubscriptionCreate, ClientGroup, Reservation, ReservationPublic
 )
 import uuid
 from typing import Optional, List, Dict, Any
 
 router = APIRouter()
-
-@router.get("/dashboard/metrics")
-def get_dashboard_metrics(
-    session: SessionDep, current_user: GetAdminUser
-) -> Any:
-    """Get real-time dashboard metrics"""
-    current_date = datetime.utcnow()
-    
-    # Active clients count
-    active_clients = session.exec(
-        select(func.count(Client.id)).where(Client.is_active == True)
-    ).one()
-    
-    # Current visits
-    current_visits = session.exec(
-        select(func.count(Visit.id))
-        .where(Visit.check_out == None)
-    ).one()
-    
-    # Today's revenue
-    today_revenue = session.exec(
-        select(func.sum(Payment.amount))
-        .where(func.date(Payment.created_at) == func.date(current_date))
-    ).one() or 0
-    
-    # Visits by day (for chart data)
-    visits_grouped = session.exec(
-        select(
-            func.date(Visit.check_in).label("day"),
-            func.count(Visit.id).label("visit_count")
-        )
-        .group_by(func.date(Visit.check_in))
-    ).all()
-    
-    # Convert the result into a list of dictionaries
-    visits_chart_data = [
-        {"day": day, "visit_count": visit_count}
-        for day, visit_count in visits_grouped
-    ]
-    
-    return {
-        "active_clients": active_clients,
-        "current_visits": current_visits,
-        "today_revenue": today_revenue,
-        "visits_by_day": visits_chart_data,
-    }
-
-
 # Client Management Routes
 @router.get("/clients", response_model=list[ClientPublic])
 def get_all_clients(
@@ -69,6 +23,19 @@ def get_all_clients(
 ) -> Any:
     """Get all clients with filtering options"""
     statement = select(Client).offset(skip).limit(limit)
+    clients = session.exec(statement).all()
+    return clients
+
+# Client Management Routes
+@router.get("/client-groups", response_model=list[ClientPublic])
+def get_all_clients(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    """Get all clients with filtering options"""
+    statement = select(ClientGroup).offset(skip).limit(limit)
     clients = session.exec(statement).all()
     return clients
 
@@ -340,5 +307,198 @@ def force_create_subscription(
     return subscription
 
 
+@router.get("/dashboard/metrics")
+def get_dashboard_metrics(
+    session: SessionDep, current_user: GetAdminUser
+) -> Any:
+    """Get comprehensive dashboard metrics"""
+    current_date = datetime.utcnow()
+    start_date = current_date - timedelta(days=7)
+    
+    # Active clients count
+    active_clients = session.exec(
+        select(func.count(Client.id)).where(Client.is_active == True)
+    ).one()
+    
+    # Current visits
+    current_visits = session.exec(
+        select(func.count(Visit.id))
+        .where(Visit.check_out == None)
+    ).one()
+    
+    # Today's revenue
+    today_revenue = session.exec(
+        select(func.sum(Payment.amount))
+        .where(func.date(Payment.created_at) == func.date(current_date))
+        .where(Payment.status == "completed")
+    ).one() or 0
+    
+    # Visits by day (for chart data)
+    visits_grouped = session.exec(
+        select(
+            func.date(Visit.check_in).label("day"),
+            func.count(Visit.id).label("visit_count")
+        )
+        .where(Visit.check_in >= start_date)
+        .group_by(func.date(Visit.check_in))
+        .order_by("day")
+    ).all()
+    
+    # Convert the result into a list of dictionaries
+    visits_chart_data = [
+        {"day": day.isoformat(), "visit_count": visit_count}
+        for day, visit_count in visits_grouped
+    ]
+    
+    # Revenue by day
+    revenue_grouped = session.exec(
+        select(
+            func.date(Payment.created_at).label("day"),
+            func.sum(Payment.amount).label("amount")
+        )
+        .where(Payment.created_at >= start_date)
+        .where(Payment.status == "completed")
+        .group_by(func.date(Payment.created_at))
+        .order_by("day")
+    ).all()
+    
+    # Convert the result into a list of dictionaries
+    revenue_chart_data = [
+        {"day": day.isoformat(), "amount": float(amount)}
+        for day, amount in revenue_grouped
+    ]
+    
+    # Subscription stats
+    active_subscriptions = session.exec(
+        select(func.count(Subscription.id))
+        .where(Subscription.is_active == True)
+    ).one()
+    
+    expired_subscriptions = session.exec(
+        select(func.count(Subscription.id))
+        .where(Subscription.is_active == False)
+    ).one()
+    
+    expiring_soon_date = current_date + timedelta(days=7)
+    expiring_soon_subscriptions = session.exec(
+        select(func.count(Subscription.id))
+        .where(Subscription.is_active == True)
+        .where(Subscription.end_date <= expiring_soon_date)
+        .where(Subscription.end_date > current_date)
+    ).one()
+    
+    # Top plans
+    top_plans = session.exec(
+        select(
+            Plan.id,
+            Plan.name,
+            func.count(Subscription.id).label("subscription_count")
+        )
+        .join(Subscription, Plan.id == Subscription.plan_id)
+        .where(Subscription.is_active == True)
+        .group_by(Plan.id, Plan.name)
+        .order_by(desc("subscription_count"))
+        .limit(4)
+    ).all()
+    
+    top_plans_data = [
+        {"id": str(id), "name": name, "subscriptions": count}
+        for id, name, count in top_plans
+    ]
+    
+    return {
+        "active_clients": active_clients,
+        "current_visits": current_visits,
+        "today_revenue": today_revenue,
+        "visits_by_day": visits_chart_data,
+        "revenue_by_day": revenue_chart_data,
+        "subscription_stats": {
+            "active": active_subscriptions,
+            "expired": expired_subscriptions,
+            "expiring_soon": expiring_soon_subscriptions
+        },
+        "top_plans": top_plans_data
+    }
 
+# Define a response model for active visits with client info
+class VisitWithClientInfo(SQLModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    check_in: datetime
+    client_name: str
+    subscription_id: Optional[uuid.UUID] = None
+
+# Enhanced active visits endpoint
+@router.get("/all-active-visits", response_model=list[VisitWithClientInfo])
+def get_all_active_visits(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    """Get all active visits with client information"""
+    visits_query = (
+        select(Visit, Client.full_name.label("client_name"))
+        .join(Client, Visit.client_id == Client.id)
+        .where(Visit.check_out == None)
+        .offset(skip)
+        .limit(limit)
+        .order_by(desc(Visit.check_in))  # Most recent first
+    )
+    
+    active_visits_with_client = session.exec(visits_query).all()
+    
+    # Create response objects with client info
+    result = []
+    for visit, client_name in active_visits_with_client:
+        result.append(
+            VisitWithClientInfo(
+                id=visit.id,
+                client_id=visit.client_id,
+                check_in=visit.check_in,
+                client_name=client_name,
+                subscription_id=visit.subscription_id
+            )
+        )
+    
+    return result
+
+# Get all plans endpoint
+@router.get("/plans", response_model=list[Plan])
+def get_all_plans(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = False
+) -> Any:
+    """Get all service plans"""
+    statement = select(Plan)
+    
+    if active_only:
+        statement = statement.where(Plan.is_active == True)
+    
+    statement = statement.offset(skip).limit(limit).order_by(Plan.name)
+    plans = session.exec(statement).all()
+    return plans
+
+# Get all reservations endpoint
+@router.get("/all-reservations", response_model=list[ReservationPublic])
+def get_all_reservations(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100,
+    upcoming_only: bool = False
+) -> Any:
+    """Get all reservations"""
+    statement = select(Reservation)
+    
+    if upcoming_only:
+        current_date = datetime.utcnow()
+        statement = statement.where(Reservation.date >= current_date)
+    
+    statement = statement.offset(skip).limit(limit).order_by(Reservation.date)
+    reservations = session.exec(statement).all()
+    return reservations
 # Get client_groups

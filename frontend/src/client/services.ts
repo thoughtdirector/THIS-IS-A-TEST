@@ -751,3 +751,337 @@ export class OrganizationService  {
   
 
 };
+
+
+export class ClientService {
+  // Client Registration
+  public static registerClient(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/register",
+      body: data,
+      errors: {
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static registerChildClient(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/register/child",
+      body: data,
+      errors: {
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Reservations
+  public static createReservation(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/reservations",
+      body: data,
+      errors: {
+        400: `Invalid subscription or time slot already booked`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Payments
+  public static createPayment(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/payments",
+      body: data,
+      errors: {
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Client Visits
+  public static getVisits(data) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/visits",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+}
+
+export class DashboardService {
+  // Dashboard metrics with all necessary data for charts
+  public static getDashboardMetrics() {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/dashboard/metrics",
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Client management
+  public static getClients(data) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/clients",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getClientGroups(data) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/client-groups",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Notifications
+  public static createNotification(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/admin/notifications",
+      body: data,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Visit management
+  public static checkInClient(data) {
+    const { client_id, check_in } = data;
+    
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/admin/visits/check-in",
+      query: {
+        client_id,
+        check_in,
+      },
+      errors: {
+        400: `Bad Request`,
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static checkOutClient(data) {
+    const { visit_id } = data;
+    
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: `/api/v1/admin/visits/${visit_id}/check-out`,
+      errors: {
+        400: `Bad Request`,
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static checkQrCode(data) {
+    const { client_id, qr_code_id } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/check-qr",
+      query: {
+        client_id,
+        qr_code_id,
+      },
+      errors: {
+        400: `Bad Request`,
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getAllVisits(data) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-visits",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getAllActiveVisits(data) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-active-visits",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Plan management
+  public static getAllPlans(data) {
+    const { skip = 0, limit = 100, active_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/plans",
+      query: {
+        skip,
+        limit,
+        active_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static createPlan(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/admin/plans",
+      body: data,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Reservation management
+  public static getAllReservations(data) {
+    const { skip = 0, limit = 100, upcoming_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-reservations",
+      query: {
+        skip,
+        limit,
+        upcoming_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  // Subscription management
+  public static approveSubscription(data) {
+    const { subscription_id } = data;
+    
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: `/api/v1/admin/subscriptions/${subscription_id}/approve`,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static forceCreateSubscription(data) {
+    const { client_group_id, ...subscriptionData } = data;
+    
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/admin/subscriptions/force-create",
+      query: {
+        client_group_id,
+      },
+      body: subscriptionData,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+}
