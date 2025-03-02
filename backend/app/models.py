@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB, BYTEA
 from sqlalchemy_json import mutable_json_type
 from sqlalchemy import Column, ARRAY, String
 from pgvector.sqlalchemy import Vector
-
+from pydantic import validator
 #Irrelevant ITEMS
 
 # Shared properties
@@ -198,7 +198,7 @@ class Client(ClientBase, table=True):
         sa_relationship_kwargs={"remote_side": "Client.guardian_id"}
     )
  
-    reservations: List["Reservation"] = Relationship(back_populates="client")
+    
     visits: List["Visit"] = Relationship(back_populates="client")
     group: Optional["ClientGroup"] = Relationship(back_populates="clients")
     qr_codes: List["QRCode"] = Relationship(back_populates="client")
@@ -214,12 +214,14 @@ class ClientGroup(SQLModel, table=True):
     
     # Relationship: the subscription that applies to the whole group
     subscriptions: List["Subscription"] = Relationship(back_populates="client_group")
-    
+    reservations: List["Reservation"] = Relationship(back_populates="client_group")
     # Relationship: the user(s) (e.g. parent accounts) that can administer the group
     admins: List[User] = Relationship(
         link_model=ClientGroupAdminLink,
         back_populates="client_groups"
     )
+
+
 
 class PlanUpdate(SQLModel):
     name: Optional[str] = Field(default=None, max_length=255)
@@ -292,33 +294,52 @@ class Subscription(SQLModel, table=True):
     plan: "Plan" = Relationship(back_populates="subscriptions")
 
 class ReservationCreate(SQLModel):
-    client_id: uuid.UUID 
+    client_group_id: uuid.UUID
     date: datetime
     duration_hours: float
-    subscription_id: Optional[uuid.UUID]
+    status: str = "pending"  # Default to pending
+    subscription_id: Optional[uuid.UUID] = None
+    client_amount: int = 1  # Default to 1 client
     
-class ReservationPublic(SQLModel):
-    client_id: uuid.UUID 
-    date: datetime
-    duration_hours: float
-    subscription_id: Optional[uuid.UUID]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    @validator('client_amount')
+    def validate_client_amount(cls, v):
+        if v < 1:
+            raise ValueError('client_amount must be at least 1')
+        return v
 
 class ReservationUpdate(SQLModel):
     date: Optional[datetime] = None
     duration_hours: Optional[float] = None
-    status: Optional[str] = Field(default=None, max_length=20)
+    status: Optional[str] = None
+    client_amount: Optional[int] = None
+    
+    @validator('client_amount')
+    def validate_client_amount(cls, v):
+        if v is not None and v < 1:
+            raise ValueError('client_amount must be at least 1')
+        return v
+
+class ReservationPublic(SQLModel):
+    id: uuid.UUID
+    client_group_id: uuid.UUID
+    date: datetime
+    duration_hours: float
+    status: str
+    created_at: datetime
     subscription_id: Optional[uuid.UUID] = None
+    client_amount: int
 
 class Reservation(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    client_id: uuid.UUID = Field(foreign_key="client.id")
+    client_group_id: uuid.UUID = Field(foreign_key="clientgroup.id")
     date: datetime
     duration_hours: float
     status: str = Field(max_length=20)  # pending, confirmed, cancelled, completed
     created_at: datetime = Field(default_factory=datetime.utcnow)
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
-    client: Client = Relationship(back_populates="reservations")
+    client_amount: int = Field(default=1)
+    client_group: "ClientGroup" = Relationship(back_populates="reservations")
+    
 
 class VisitCreate(SQLModel):
     client_id: uuid.UUID

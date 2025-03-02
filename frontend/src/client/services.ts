@@ -758,7 +758,7 @@ export class ClientService {
   public static registerClient(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/register",
+      url: "/api/v1/admin/register",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -770,7 +770,7 @@ export class ClientService {
   public static registerChildClient(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/register/child",
+      url: "/api/v1/clients/register/child",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -783,7 +783,7 @@ export class ClientService {
   public static createReservation(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/reservations",
+      url: "/api/v1/clients/reservations",
       body: data,
       errors: {
         400: `Invalid subscription or time slot already booked`,
@@ -797,7 +797,7 @@ export class ClientService {
   public static createPayment(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/payments",
+      url: "/api/v1/clients/payments",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -812,7 +812,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/visits",
+      url: "/api/v1/clients/visits",
       query: {
         skip,
         limit,
@@ -1084,4 +1084,19 @@ export class DashboardService {
       useOrg: true,
     });
   }
+  public static getAllReservations(data) {
+    const { skip = 0, limit = 100, upcoming_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-reservations",
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
 }

@@ -16,7 +16,7 @@ const ActivateOrganization = () => {
 
 function ActivateOrganizationHandler() {
   const { isLoading } = useAuth()
-  const organization_id = localStorage.getItem("organization_id") || ""
+  const organization_id = localStorage.getItem("organization_id") || "s"
 
   return (
     <>

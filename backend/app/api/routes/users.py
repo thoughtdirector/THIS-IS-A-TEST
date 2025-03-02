@@ -218,7 +218,81 @@ def register_client(session: SessionDep, user_in: ClientRegister) -> Any:
 
     return user
 
-
+@router.post("/register", response_model=Dict[str, Any])
+def register_user(
+    *, session: SessionDep, user_in: UserCreate, client_in: ClientCreate
+) -> Any:
+    """
+    Register a new user with associated client and client group.
+    """
+    # Check if user with this email already exists
+    user = session.exec(select(User).where(User.email == user_in.email)).first()
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="A user with this email already exists."
+        )
+    
+    # Check if client with this email already exists
+    client = session.exec(select(Client).where(Client.email == client_in.email)).first()
+    if client:
+        raise HTTPException(
+            status_code=400,
+            detail="A client with this email already exists."
+        )
+    
+    # Create user
+    db_user = User(
+        email=user_in.email,
+        hashed_password=get_password_hash(user_in.password),
+        full_name=user_in.full_name,
+        is_active=True,
+    )
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    
+    # Create client
+    db_client = Client.model_validate(client_in)
+    db_client.user_id = db_user.id
+    session.add(db_client)
+    session.commit()
+    session.refresh(db_client)
+    
+    # Create QR code for the client
+    qr_code = QRCode(client_id=db_client.id)
+    session.add(qr_code)
+    session.commit()
+    session.refresh(qr_code)
+    
+    # Update client with QR code ID
+    db_client.qr_code = str(qr_code.id)
+    session.add(db_client)
+    
+    # Create a ClientGroup for this user
+    group_name = f"{db_client.full_name}'s Group"
+    client_group = ClientGroup(name=group_name)
+    session.add(client_group)
+    session.commit()
+    session.refresh(client_group)
+    
+    # Add the client to the group
+    db_client.group_id = client_group.id
+    session.add(db_client)
+    
+    # Make the user an admin of the group
+    admin_link = ClientGroupAdminLink(client_group_id=client_group.id, admin_id=db_user.id)
+    session.add(admin_link)
+    
+    session.commit()
+    session.refresh(db_client)
+    
+    return {
+        "user": UserPublic.model_validate(db_user),
+        "client": ClientPublic.model_validate(db_client),
+        "client_group_id": client_group.id,
+        "message": "User, client, and client group created successfully"
+    }
 
 @router.get("/{user_id}", response_model=UserPublic)
 def read_user_by_id(

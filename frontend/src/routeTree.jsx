@@ -22,6 +22,21 @@ import NotFound from './components/Common/NotFound'
 // Import the new ActivateOrganizationHandler
 import ActivateOrganizationHandler from './routes/_activateOrganization'
 
+import Clients from './components/Dashboard/Clients'
+import ClientRegister from './components/Dashboard/ClientRegister'
+import Plans from './components/Dashboard/Plans'
+import PlanDetail from './components/Dashboard/PlanDetail'
+import Reservations from './components/Dashboard/Reservations'
+import ReservationCreate from './components/Dashboard/ReservationCreate'
+import Reports from './components/Dashboard/Reports'
+import VisitCheckIn from './components/Dashboard/VisitCheckIn'
+import Payments from './components/Dashboard/Payments'
+import PaymentCreate from './components/Dashboard/PaymentCreate'
+import Notifications from './components/Dashboard/Notifications'
+import NotificationCreate from './components/Dashboard/NotificationCreate'
+
+
+
 // Root route
 
 const rootRoute =  createRootRoute({
@@ -149,6 +164,81 @@ const recoverPasswordRoute = createRoute({
   component: RecoverPassword,
 })
 
+
+
+const clientsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/clients',
+  component: Clients,
+})
+
+const clientRegisterRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/clients/register',
+  component: ClientRegister,
+})
+
+// Plan routes
+const plansRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/plans',
+  component: Plans,
+})
+
+const planDetailRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/plans/$planId',
+  component: PlanDetail,
+})
+
+// Reservation routes
+const reservationsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/reservations',
+  component: Reservations,
+})
+
+const reservationCreateRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/reservations/create',
+  component: ReservationCreate,
+})
+
+// Visit routes
+const visitCheckInRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/visits/check-in',
+  component: VisitCheckIn,
+})
+
+// Payment routes
+const paymentsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/payments',
+  component: Payments,
+})
+
+const paymentCreateRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/payments/create',
+  component: PaymentCreate,
+})
+
+// Notification routes
+const notificationsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/notifications/create',
+  component: NotificationCreate,
+})
+
+// Reports route
+const reportsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/reports',
+  component: Reports,
+})
+
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   layoutRoute.addChildren([
@@ -156,6 +246,17 @@ const routeTree = rootRoute.addChildren([
       adminRoute,
       dashboardRoute,
       chatbotRoute,
+      clientsRoute,
+      clientRegisterRoute,
+      plansRoute,
+      planDetailRoute,
+      reservationsRoute,
+      reservationCreateRoute,
+      visitCheckInRoute,
+      paymentsRoute,
+      paymentCreateRoute,
+      notificationsRoute,
+      reportsRoute,
       
     ]),
     settingsRoute,

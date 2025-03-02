@@ -78,3 +78,43 @@ async def get_admin_user(
     return current_user
 
 GetAdminUser = Annotated[User,Depends(get_admin_user)]
+
+async def get_client_group(
+    group_id: uuid.UUID = Path(...),
+    session: SessionDep = Depends(),
+    current_user: User = Depends(get_current_user),
+) -> ClientGroup:
+    """
+    Get a client group by ID. 
+    - If the user is an admin, allow access to any group
+    - If the user is not an admin, only allow access if they are an admin of the group
+    """
+    # First, check if the group exists
+    client_group = session.get(ClientGroup, group_id)
+    if not client_group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client group not found"
+        )
+    
+    # If the user is a system admin, allow access
+    if current_user.is_superuser:
+        return client_group
+    
+    # Otherwise, check if the user is an admin of this specific group
+    is_group_admin = session.exec(
+        select(ClientGroupAdminLink)
+        .where(ClientGroupAdminLink.client_group_id == group_id)
+        .where(ClientGroupAdminLink.admin_id == current_user.id)
+    ).first() is not None
+    
+    if not is_group_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this client group"
+        )
+    
+    return client_group
+
+# Create a typed annotation for use in route functions
+GetClientGroup = Annotated[ClientGroup, Depends(get_client_group)]

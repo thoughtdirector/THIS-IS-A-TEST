@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from "@tanstack/react-router";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Calendar, CheckCircle, DollarSign, Users, Clock, PlusCircle, List, AlertCircle, CreditCard, User, BookOpen, Home } from 'lucide-react';
-
 // Simulating the DashboardService for the component
 // This would be imported from your actual service in a real application
 import { DashboardService } from '../../client/services';
 
+// Import ShadCN UI components
+import { Card, CardHeader, CardContent, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 const Dashboard = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // Simulated navigation function
-  const navigate = (path) => {
-    console.log(`Navigating to: ${path}`);
-    // In a real app this would use router navigation
-  };
   
   // Fetch dashboard metrics with auto-refresh
   const { 
@@ -107,16 +109,19 @@ const Dashboard = () => {
   
   // Error display component
   const ErrorDisplay = ({ title, error }) => (
-    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-      <h3 className="font-semibold text-red-800">{title}</h3>
-      <p>{error?.message || "An unexpected error occurred"}</p>
-      <button 
-        onClick={() => queryClient.invalidateQueries()} 
-        className="mt-2 bg-red-100 px-3 py-1 rounded text-red-800 text-sm font-medium hover:bg-red-200"
-      >
-        Try Again
-      </button>
-    </div>
+    <Alert variant="destructive">
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>
+        {error?.message || "An unexpected error occurred"}
+        <Button 
+          variant="outline" 
+          className="mt-2"
+          onClick={() => queryClient.invalidateQueries()}
+        >
+          Try Again
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 
   // Load sample data for demo purposes
@@ -178,9 +183,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">Today: {new Date().toLocaleDateString()}</span>
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                Admin
-              </div>
+              <Badge variant="secondary">Admin</Badge>
             </div>
           </div>
         </div>
@@ -189,372 +192,360 @@ const Dashboard = () => {
       {/* Main content */}
       <main className="flex-grow p-6">
         {/* Navigation tabs */}
-        <div className="flex space-x-1 mb-6 bg-white rounded-lg shadow overflow-hidden">
-          <button 
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'overview' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500' : 'text-gray-700 hover:bg-gray-50'}`}
-          >
-            <BookOpen size={16} className="mr-2" />
-            Overview
-          </button>
-          <button 
-            onClick={() => setActiveTab('visits')}
-            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'visits' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500' : 'text-gray-700 hover:bg-gray-50'}`}
-          >
-            <Clock size={16} className="mr-2" />
-            Active Visits
-          </button>
-        </div>
-        
-        {/* Overview tab */}
-        {activeTab === 'overview' && (
-          <>
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab}
+          className="mb-6"
+        >
+          <TabsList className="bg-white shadow rounded-lg">
+            <TabsTrigger value="overview" className="flex items-center">
+              <BookOpen className="mr-2 h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="visits" className="flex items-center">
+              <Clock className="mr-2 h-4 w-4" />
+              Active Visits
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview">
             {metricsError ? (
               <ErrorDisplay title="Error Loading Dashboard Data" error={metricsErrorData} />
             ) : (
               <>
                 {/* Key metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-white shadow rounded-lg p-6 flex items-center">
-                    <div className="rounded-full bg-blue-100 p-3 mr-4">
-                      <Users size={24} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Clients</p>
-                      <p className="text-2xl font-semibold text-gray-900">{displayMetrics.active_clients}</p>
-                    </div>
-                  </div>
+                  <Card>
+                    <CardContent className="p-6 flex items-center">
+                      <div className="rounded-full bg-blue-100 p-3 mr-4">
+                        <Users className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Active Clients</p>
+                        <p className="text-2xl font-semibold text-gray-900">{displayMetrics.active_clients}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  <div className="bg-white shadow rounded-lg p-6 flex items-center">
-                    <div className="rounded-full bg-green-100 p-3 mr-4">
-                      <CheckCircle size={24} className="text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Current Visits</p>
-                      <p className="text-2xl font-semibold text-gray-900">{displayMetrics.current_visits}</p>
-                    </div>
-                  </div>
+                  <Card>
+                    <CardContent className="p-6 flex items-center">
+                      <div className="rounded-full bg-green-100 p-3 mr-4">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Current Visits</p>
+                        <p className="text-2xl font-semibold text-gray-900">{displayMetrics.current_visits}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  <div className="bg-white shadow rounded-lg p-6 flex items-center">
-                    <div className="rounded-full bg-purple-100 p-3 mr-4">
-                      <DollarSign size={24} className="text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
-                      <p className="text-2xl font-semibold text-gray-900">
-                        {formatCurrency(displayMetrics.today_revenue)}
-                      </p>
-                    </div>
-                  </div>
+                  <Card>
+                    <CardContent className="p-6 flex items-center">
+                      <div className="rounded-full bg-purple-100 p-3 mr-4">
+                        <DollarSign className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                        <p className="text-2xl font-semibold text-gray-900">
+                          {formatCurrency(displayMetrics.today_revenue)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 {/* Subscription stats */}
-                <div className="bg-white shadow rounded-lg p-6 mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Subscription Stats</h2>
-                    <button 
-                      onClick={() => navigate('/subscriptions')}
+                <Card className="mb-6">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle>Subscription Stats</CardTitle>
+                    <Link
+                      to="/dashboard/subscriptions"
                       className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                     >
                       View All <span className="ml-1">→</span>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-green-700">Active Subscriptions</p>
-                      <p className="text-2xl font-semibold text-green-900">
-                        {displayMetrics.subscription_stats.active}
-                      </p>
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-green-50 rounded-lg p-4">
+                        <p className="text-sm font-medium text-green-700">Active Subscriptions</p>
+                        <p className="text-2xl font-semibold text-green-900">
+                          {displayMetrics.subscription_stats.active}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-yellow-50 rounded-lg p-4">
+                        <p className="text-sm font-medium text-yellow-700">Expiring Soon</p>
+                        <p className="text-2xl font-semibold text-yellow-900">
+                          {displayMetrics.subscription_stats.expiring_soon}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-red-50 rounded-lg p-4">
+                        <p className="text-sm font-medium text-red-700">Expired</p>
+                        <p className="text-2xl font-semibold text-red-900">
+                          {displayMetrics.subscription_stats.expired}
+                        </p>
+                      </div>
                     </div>
-                    
-                    <div className="bg-yellow-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-yellow-700">Expiring Soon</p>
-                      <p className="text-2xl font-semibold text-yellow-900">
-                        {displayMetrics.subscription_stats.expiring_soon}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-red-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-red-700">Expired</p>
-                      <p className="text-2xl font-semibold text-red-900">
-                        {displayMetrics.subscription_stats.expired}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
                 
                 {/* Charts section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Visits by day chart */}
-                  <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Visits (Last 7 Days)</h2>
-                    <div className="h-60">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={displayMetrics.visits_by_day}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="day" 
-                            tickFormatter={formatDate}
-                          />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [`${value} visits`, 'Visits']}
-                            labelFormatter={formatDate}
-                          />
-                          <Bar dataKey="visit_count" fill="#3b82f6" name="Visits" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Daily Visits (Last 7 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-60">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={displayMetrics.visits_by_day}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="day" 
+                              tickFormatter={formatDate}
+                            />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [`${value} visits`, 'Visits']}
+                              labelFormatter={formatDate}
+                            />
+                            <Bar dataKey="visit_count" fill="#3b82f6" name="Visits" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
                   
                   {/* Revenue by day chart */}
-                  <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Revenue (Last 7 Days)</h2>
-                    <div className="h-60">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={displayMetrics.revenue_by_day}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="day" 
-                            tickFormatter={formatDate}
-                          />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [formatCurrency(value), 'Revenue']}
-                            labelFormatter={formatDate}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="amount" 
-                            stroke="#8b5cf6" 
-                            strokeWidth={2}
-                            name="Revenue" 
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Daily Revenue (Last 7 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-60">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={displayMetrics.revenue_by_day}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="day" 
+                              tickFormatter={formatDate}
+                            />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [formatCurrency(value), 'Revenue']}
+                              labelFormatter={formatDate}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="amount" 
+                              stroke="#8b5cf6" 
+                              strokeWidth={2}
+                              name="Revenue" 
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 {/* Top plans */}
-                <div className="bg-white shadow rounded-lg p-6 mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Popular Plans</h2>
-                    <button 
-                      onClick={() => navigate('/plans')}
+                <Card className="mb-6">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle>Popular Plans</CardTitle>
+                    <Link
+                      to="/dashboard/plans"
                       className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                     >
                       Manage Plans <span className="ml-1">→</span>
-                    </button>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Plan Name
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Active Subscriptions
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Plan Name</TableHead>
+                          <TableHead>Active Subscriptions</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {displayMetrics.top_plans.map((plan) => (
-                          <tr key={plan.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {plan.name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {plan.subscriptions}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button
-                                onClick={() => navigate(`/plans/${plan.id}`)}
+                          <TableRow key={plan.id}>
+                            <TableCell className="font-medium">{plan.name}</TableCell>
+                            <TableCell>{plan.subscriptions}</TableCell>
+                            <TableCell className="text-right">
+                              <Link
+                                to="/dashboard/plans/$planId"
+                                params={{ planId: plan.id }}
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 View
-                              </button>
-                            </td>
-                          </tr>
+                              </Link>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
                 
                 {/* Action buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <button 
-                    onClick={() => navigate('/clients/register')}
+                  <Link
+                    to="/dashboard/clients/register"
                     className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center shadow-sm hover:shadow transition"
                   >
-                    <User size={24} className="text-blue-600 mb-2" />
+                    <User className="h-6 w-6 text-blue-600 mb-2" />
                     <span className="text-sm font-medium">New Client</span>
-                  </button>
+                  </Link>
                   
-                  <button 
-                    onClick={() => navigate('/reservations/create')}
+                  <Link
+                    to="/dashboard/reservations/create"
                     className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center shadow-sm hover:shadow transition"
                   >
-                    <Calendar size={24} className="text-green-600 mb-2" />
+                    <Calendar className="h-6 w-6 text-green-600 mb-2" />
                     <span className="text-sm font-medium">New Reservation</span>
-                  </button>
+                  </Link>
                   
-                  <button 
-                    onClick={() => navigate('/payments/create')}
+                  <Link
+                    to="/dashboard/payments/create"
                     className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center shadow-sm hover:shadow transition"
                   >
-                    <CreditCard size={24} className="text-purple-600 mb-2" />
+                    <CreditCard className="h-6 w-6 text-purple-600 mb-2" />
                     <span className="text-sm font-medium">Process Payment</span>
-                  </button>
+                  </Link>
                   
-                  <button 
-                    onClick={() => navigate('/notifications/create')}
+                  <Link
+                    to="/dashboard/notifications/create"
                     className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center shadow-sm hover:shadow transition"
                   >
-                    <AlertCircle size={24} className="text-red-600 mb-2" />
+                    <AlertCircle className="h-6 w-6 text-red-600 mb-2" />
                     <span className="text-sm font-medium">Send Notification</span>
-                  </button>
+                  </Link>
                 </div>
               </>
             )}
-          </>
-        )}
-        
-        {/* Active visits tab */}
-        {activeTab === 'visits' && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Active Visits</h2>
-              <div className="flex space-x-2">
-                <button 
-                  onClick={() => queryClient.invalidateQueries(['activeVisits'])}
-                  className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center"
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </button>
-                <button 
-                  onClick={() => navigate('/visits/check-in')}
-                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center"
-                >
-                  <PlusCircle size={16} className="mr-1" />
-                  Check In Client
-                </button>
-              </div>
-            </div>
-            
-            {visitsError ? (
-              <ErrorDisplay title="Error Loading Active Visits" error={visitsErrorData} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Client
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Check In
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time Elapsed
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {displayVisits.map((visit) => (
-                      <tr key={visit.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{visit.client_name}</div>
-                          <div className="text-sm text-gray-500">ID: {visit.client_id}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{formatTime(visit.check_in)}</div>
-                          <div className="text-sm text-gray-500">{formatDate(visit.check_in)}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{getTimeElapsed(visit.check_in)}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleCheckOut(visit.id)}
-                            disabled={checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id}
-                            className={`text-white px-3 py-1 rounded ${
-                              checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-green-600 hover:bg-green-700'
-                            }`}
-                          >
-                            {checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id
-                              ? 'Processing...'
-                              : 'Check Out'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+          </TabsContent>
+          
+          <TabsContent value="visits">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle>Active Visits</CardTitle>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => queryClient.invalidateQueries(['activeVisits'])}
+                    className="flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </Button>
+                  <Link to="/dashboard/visits/check-in">
+                    <Button size="sm" className="flex items-center">
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Check In Client
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {visitsError ? (
+                  <ErrorDisplay title="Error Loading Active Visits" error={visitsErrorData} />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Check In</TableHead>
+                        <TableHead>Time Elapsed</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {displayVisits.map((visit) => (
+                        <TableRow key={visit.id}>
+                          <TableCell>
+                            <div className="font-medium">{visit.client_name}</div>
+                            <div className="text-sm text-gray-500">ID: {visit.client_id}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div>{formatTime(visit.check_in)}</div>
+                            <div className="text-sm text-gray-500">{formatDate(visit.check_in)}</div>
+                          </TableCell>
+                          <TableCell>{getTimeElapsed(visit.check_in)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant={checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id ? "secondary" : "default"}
+                              size="sm"
+                              onClick={() => handleCheckOut(visit.id)}
+                              disabled={checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id}
+                            >
+                              {checkOutMutation.isPending && checkOutMutation.variables?.visit_id === visit.id
+                                ? 'Processing...'
+                                : 'Check Out'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
       
       {/* Navigation footer */}
       <footer className="bg-white border-t border-gray-200 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-5 gap-4">
-            <button 
-              onClick={() => navigate('/')}
+            <Link
+              to="/dashboard"
               className="flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
             >
-              <Home size={20} />
+              <Home className="h-5 w-5" />
               <span className="text-xs mt-1">Dashboard</span>
-            </button>
+            </Link>
             
-            <button 
-              onClick={() => navigate('/clients')}
+            <Link
+              to="/dashboard/clients"
               className="flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
             >
-              <Users size={20} />
+              <Users className="h-5 w-5" />
               <span className="text-xs mt-1">Clients</span>
-            </button>
+            </Link>
             
-            <button 
-              onClick={() => navigate('/plans')}
+            <Link
+              to="/dashboard/plans"
               className="flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
             >
-              <List size={20} />
+              <List className="h-5 w-5" />
               <span className="text-xs mt-1">Plans</span>
-            </button>
+            </Link>
             
-            <button 
-              onClick={() => navigate('/reservations')}
+            <Link
+              to="/dashboard/reservations"
               className="flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
             >
-              <Calendar size={20} />
+              <Calendar className="h-5 w-5" />
               <span className="text-xs mt-1">Reservations</span>
-            </button>
+            </Link>
             
-            <button 
-              onClick={() => navigate('/reports')}
+            <Link
+              to="/dashboard/reports"
               className="flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
             >
-              <DollarSign size={20} />
+              <DollarSign className="h-5 w-5" />
               <span className="text-xs mt-1">Reports</span>
-            </button>
+            </Link>
           </div>
         </div>
       </footer>
