@@ -22,7 +22,9 @@ function Layout() {
           <Spinner size="xl" color="ui.main" />
         </Flex>
       ) : (
+        
         <Outlet />
+       
       
       )}
       <UserMenu />

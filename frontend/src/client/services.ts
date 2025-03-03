@@ -301,6 +301,27 @@ export class UsersService {
   }
 
   /**
+   * Register User
+   * Create new user without the need to be logged in.
+   * @returns UserPublic Successful Response
+   * @throws ApiError
+   */
+  public static signupUser(
+    data: TDataRegisterUser,
+  ): CancelablePromise<UserPublic> {
+    const { requestBody } = data
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/users/signup",
+      body: requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
    * Read User By Id
    * Get a specific user by id.
    * @returns UserPublic Successful Response
@@ -321,6 +342,9 @@ export class UsersService {
       },
     })
   }
+
+
+  
 
   /**
    * Update User
@@ -1048,6 +1072,46 @@ export class DashboardService {
     });
   }
 
+  public static getAllPayments(data) {
+    const { skip = 0, limit = 100, upcoming_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-payments",
+      query: {
+        skip,
+        limit,
+        upcoming_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getAllSubscriptions(data) {
+    const { skip = 0, limit = 100, upcoming_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/admin/all-subscriptions",
+      query: {
+        skip,
+        limit,
+        upcoming_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
   // Subscription management
   public static approveSubscription(data) {
     const { subscription_id } = data;
@@ -1084,19 +1148,6 @@ export class DashboardService {
       useOrg: true,
     });
   }
-  public static getAllReservations(data) {
-    const { skip = 0, limit = 100, upcoming_only = false } = data;
-    
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/admin/all-reservations",
-      errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        422: `Validation Error`,
-      },
-      useOrg: true,
-    });
-  }
+
 
 }

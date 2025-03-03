@@ -72,7 +72,7 @@ const ClientRegister = () => {
     mutationFn: ClientService.registerClient,
     onSuccess: (data) => {
       queryClient.invalidateQueries(['clients']);
-      navigate({ to: '/clients' });
+      navigate({ to: '/dashboard/clients' });
     },
   });
   
@@ -81,7 +81,7 @@ const ClientRegister = () => {
     mutationFn: ClientService.registerChildClient,
     onSuccess: (data) => {
       queryClient.invalidateQueries(['clients']);
-      navigate({ to: '/clients' });
+      navigate({ to: '/dashboard/clients' });
     },
   });
   
@@ -121,7 +121,7 @@ const ClientRegister = () => {
     <div className="container mx-auto py-6 max-w-3xl">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/clients">
+          <Link to="/dashboard/clients">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -224,7 +224,7 @@ const ClientRegister = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate({ to: '/clients' })}
+                  onClick={() => navigate({ to: '/dashboard/clients' })}
                 >
                   Cancel
                 </Button>
@@ -339,7 +339,7 @@ const ClientRegister = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate({ to: '/clients' })}
+                  onClick={() => navigate({ to: '/dashboard/clients' })}
                 >
                   Cancel
                 </Button>

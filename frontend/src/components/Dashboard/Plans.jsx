@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { PlusCircle, Search, RefreshCw, Filter, ChevronDown, Clock, CreditCard, Calendar } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Search, RefreshCw, Filter, ChevronDown, Clock, CreditCard, Calendar } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -117,7 +117,14 @@ const Plans = () => {
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center mb-6">
+        <Button variant="outline" size="icon" asChild className="mr-4">
+          <Link to="/dashboard/">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
         <h1 className="text-2xl font-bold">Membership Plans</h1>
+      </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center">
@@ -372,12 +379,12 @@ const Plans = () => {
               </CardContent>
               <CardFooter className="flex justify-end space-x-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link to={`/plans/${plan.id}/edit`}>
+                  <Link to={`/dashboard/plans/${plan.id}/edit`}>
                     Edit
                   </Link>
                 </Button>
                 <Button asChild size="sm">
-                  <Link to={`/plans/${plan.id}`}>
+                  <Link to={`/dashboard/plans/${plan.id}`}>
                     View Details
                   </Link>
                 </Button>

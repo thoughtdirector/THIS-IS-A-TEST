@@ -1,16 +1,18 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select, func
 from typing import Any, Optional, List
 from datetime import timedelta
 from datetime import datetime
 import uuid
-from app.api.deps import CurrentUser, SessionDep, GetAdminUser
+from app.api.deps import (CurrentUser, SessionDep, GetAdminUser, GetClientGroupFromPath, GetClientFromPath, 
+                          GetClientFromBody, GetClientGroupFromBody, GetClientGroupFromQuery)
 from app.models import (
     Client, ClientCreate, ClientUpdate, ClientPublic, Message,
     Reservation, ReservationCreate, ReservationPublic,
     Subscription, SubscriptionCreate, SubscriptionPublic,
     Payment, PaymentCreate, PaymentPublic, Visit, VisitPublic, QRCode, ClientGroup
 )
+
 
 router = APIRouter()
 
@@ -19,120 +21,53 @@ router = APIRouter()
 def register_client(
     *, session: SessionDep, client_in: ClientCreate
 ) -> Any:
-    """Register a new client"""
+    """Register a new client without assigning to a group"""
     client = Client.model_validate(client_in)
-    client.qr_code = generate_qr_code(client.id)  # Implement QR generation
+    # Generate QR code after saving to get ID
     session.add(client)
     session.commit()
     session.refresh(client)
+    
+    # Create QR code entry
+    qr_code = QRCode(client_id=client.id)
+    session.add(qr_code)
+    
+    # Update client with QR code ID
+    client.qr_code = str(qr_code.id)
+    session.add(client)
+    session.commit()
+    session.refresh(client)
+    
     return client
 
 @router.post("/register/child", response_model=ClientPublic)
 def register_child(
     *, session: SessionDep, current_user: CurrentUser, client_in: ClientCreate
 ) -> Any:
-    """Register a child for current guardian"""
-    client = Client.model_validate(client_in)
-    client.guardian_id = current_user.id
-    client.is_child = True
-    session.add(client)
-    session.commit()
-    session.refresh(client)
-    return client
-
-# Reservation Routes
-@router.post("/reservations", response_model=ReservationPublic)
-def create_reservation(
-    *, session: SessionDep, current_user: CurrentUser, reservation_in: ReservationCreate
-) -> Any:
-    """Create a new reservation"""
-    # Validate subscription and availability
-    subscription = session.get(Subscription, reservation_in.subscription_id)
-
-    # REMOVE THIS IF SUBSCRIPTION IS NECESSARY
-    # if not subscription or not subscription.is_active:
-    #     raise HTTPException(status_code=400, detail="Invalid or inactive subscription")
-    # if subscription.user_id != current_user.user_id:
-    #     raise HTTPException(status_code=400, detail="Invalid or inactive subscription")
-    print(reservation_in, "\n\n\n")
-    existing_reservations = session.exec(
-        select(Reservation)
-        .where(Reservation.date < reservation_in.date + timedelta(reservation_in.duration_hours))
-        .where(Reservation.date  + timedelta(reservation_in.duration_hours) > reservation_in.date)
-        .where(Reservation.subscription_id == reservation_in.subscription_id)
-    ).all()
-
-    if existing_reservations:
+    """Register a child for current guardian and add to same group"""
+    # Find the parent client associated with the current user
+    parent_client = session.exec(
+        select(Client).where(Client.user_id == current_user.id)
+    ).first()
+    
+    if not parent_client:
         raise HTTPException(
-            status_code=400,
-            detail="Time slot already booked"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No client profile found for current user"
         )
     
-    reservation = Reservation.model_validate(reservation_in)
-
-    #ACTIVATE TO STOP PEOPLE FROM RESERVING FOR OTHER PEOPLE
-    # if reservation.client_id != current_user.id:
-    #     if not current_user.is_admin:
-    #         error
-
-    #reservation.client_id = current_user.id
-    session.add(reservation)
-    session.commit()
-    session.refresh(reservation)
-    return reservation
-
-# Payment Routes
-@router.post("/payments", response_model=PaymentPublic)
-def create_payment(
-    *, session: SessionDep, current_user: CurrentUser, payment_in: PaymentCreate
-) -> Any:
-    """Process a new payment"""
-    payment = Payment.model_validate(payment_in)
-    payment.client_id = current_user.id
-    # Implement payment gateway integration here
-    session.add(payment)
-    session.commit()
-    session.refresh(payment)
-    return payment
-
-@router.get("/visits", response_model=list[VisitPublic])
-def get_visits(
-    session: SessionDep,
-    current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 100
-) -> Any:
-    statement = select(Visit).where(
-        Visit.client_id == current_user.id
-    ).offset(skip).limit(limit)
-    visits = session.exec(statement).all()
-    return visits
-
-@router.get("/subscriptions", response_model=list[VisitPublic])
-def get_visits(
-    session: SessionDep,
-    current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 100
-) -> Any:
-    statement = select(Visit).where(
-        Visit.client_id == current_user.id
-    ).offset(skip).limit(limit)
-    visits = session.exec(statement).all()
-    return visits
-
-
-
-@router.post("", response_model=ClientPublic)
-def register_client(
-    *, session: SessionDep, current_user: GetAdminUser, client_in: ClientCreate
-) -> Any:
-    """Register a new client (admin only)"""
+    # Create child client
     client = Client.model_validate(client_in)
+    client.guardian_id = parent_client.id
+    client.is_child = True
     
-    # Generate QR code for the client
+    # Add child to the same group as parent
+    if parent_client.group_id:
+        client.group_id = parent_client.group_id
+    
+    # Save client to generate ID
     session.add(client)
-    session.commit()  # Commit to generate the ID
+    session.commit()
     session.refresh(client)
     
     # Create QR code entry
@@ -147,19 +82,16 @@ def register_client(
     
     return client
 
-@router.post("/group/{group_id}", response_model=ClientPublic)
+@router.post("/group/{group_id}/client", response_model=ClientPublic)
 def register_client_in_group(
-    *, session: SessionDep, current_user: GetAdminUser, 
-    group_id: uuid.UUID, client_in: ClientCreate
+    *, 
+    session: SessionDep, 
+    client_group: GetClientGroupFromPath,
+    client_in: ClientCreate
 ) -> Any:
-    """Register a new client directly into a specific group (admin only)"""
-    # Verify group exists
-    client_group = session.get(ClientGroup, group_id)
-    if not client_group:
-        raise HTTPException(status_code=404, detail="Client group not found")
-    
+    """Register a new client directly into a specific group"""
     client = Client.model_validate(client_in)
-    client.group_id = group_id
+    client.group_id = client_group.id
     
     # Generate QR code for the client
     session.add(client)
@@ -178,12 +110,14 @@ def register_client_in_group(
     
     return client
 
-@router.post("/child/{parent_id}", response_model=ClientPublic)
+@router.post("/{parent_id}/child", response_model=ClientPublic)
 def register_child_client(
-    *, session: SessionDep, current_user: GetAdminUser,
-    parent_id: uuid.UUID, client_in: ClientCreate
+    *, 
+    session: SessionDep, 
+    parent_id: uuid.UUID, 
+    client_in: ClientCreate
 ) -> Any:
-    """Register a child client for a parent (admin only)"""
+    """Register a child client for a parent"""
     # Verify parent exists
     parent = session.get(Client, parent_id)
     if not parent:
@@ -193,7 +127,7 @@ def register_child_client(
     client.is_child = True
     client.guardian_id = parent_id
     
-    # If parent belongs to a group, automatically add child to the same group
+    # Automatically add child to the same group as parent
     if parent.group_id:
         client.group_id = parent.group_id
     
@@ -214,22 +148,75 @@ def register_child_client(
     
     return client
 
+@router.post("/group/{group_id}/admin/{client_id}", response_model=dict)
+def add_group_admin(
+    *,
+    session: SessionDep,
+    current_user: GetAdminUser,
+    group_id: uuid.UUID,
+    client_id: uuid.UUID
+) -> Any:
+    """Add a client as an admin to a client group"""
+    # Verify group exists
+    client_group = session.get(ClientGroup, group_id)
+    if not client_group:
+        raise HTTPException(status_code=404, detail="Client group not found")
+    
+    # Verify client exists
+    client = session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Make client a group admin by updating the client record
+    client.group_admin = client_group
+    session.add(client)
+    session.commit()
+    
+    return {"message": f"Client {client_id} added as admin to group {group_id}"}
+
+@router.delete("/group/{group_id}/admin/{client_id}", response_model=dict)
+def remove_group_admin(
+    *,
+    session: SessionDep,
+    current_user: GetAdminUser,
+    group_id: uuid.UUID,
+    client_id: uuid.UUID
+) -> Any:
+    """Remove a client as an admin from a client group"""
+    # Verify group exists
+    client_group = session.get(ClientGroup, group_id)
+    if not client_group:
+        raise HTTPException(status_code=404, detail="Client group not found")
+    
+    # Verify client exists
+    client = session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Check if client is an admin of this group
+    if client.group_admin and client.group_admin.id == group_id:
+        client.group_admin = None
+        session.add(client)
+        session.commit()
+        return {"message": f"Client {client_id} removed as admin from group {group_id}"}
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Client is not an admin of this group"
+        )
+
 @router.get("", response_model=List[ClientPublic])
 def get_all_clients(
     session: SessionDep,
-    current_user: GetAdminUser,
+    client_group: GetClientGroupFromQuery,
     skip: int = 0,
     limit: int = 100,
-    group_id: Optional[uuid.UUID] = None,
     is_child: Optional[bool] = None
 ) -> Any:
-    """Get all clients with filtering options (admin only)"""
-    statement = select(Client)
+    """Get all clients in a specific group with filtering options"""
+    statement = select(Client).where(Client.group_id == client_group.id)
     
     # Apply filters if provided
-    if group_id is not None:
-        statement = statement.where(Client.group_id == group_id)
-    
     if is_child is not None:
         statement = statement.where(Client.is_child == is_child)
         
@@ -239,24 +226,20 @@ def get_all_clients(
 
 @router.get("/{client_id}", response_model=ClientPublic)
 def get_client(
-    *, session: SessionDep, current_user: GetAdminUser, client_id: uuid.UUID
+    *, 
+    client: GetClientFromPath
 ) -> Any:
-    """Get a specific client by ID (admin only)"""
-    client = session.get(Client, client_id)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+    """Get a specific client by ID (using dependency)"""
     return client
 
 @router.put("/{client_id}", response_model=ClientPublic)
 def update_client(
-    *, session: SessionDep, current_user: GetAdminUser, 
-    client_id: uuid.UUID, client_in: ClientUpdate
+    *, 
+    session: SessionDep, 
+    client: GetClientFromPath,
+    client_in: ClientUpdate
 ) -> Any:
-    """Update a client (admin only)"""
-    client = session.get(Client, client_id)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    
+    """Update a client"""
     # Update client attributes from input
     client_data = client_in.model_dump(exclude_unset=True)
     for key, value in client_data.items():
@@ -272,6 +255,7 @@ def update_client(
         if guardian.group_id and client.group_id != guardian.group_id:
             client.group_id = guardian.group_id
     
+    client.updated_at = datetime.utcnow()
     session.add(client)
     session.commit()
     session.refresh(client)
@@ -279,16 +263,14 @@ def update_client(
 
 @router.delete("/{client_id}", response_model=dict)
 def delete_client(
-    *, session: SessionDep, current_user: GetAdminUser, client_id: uuid.UUID
+    *, 
+    session: SessionDep, 
+    client: GetClientFromPath
 ) -> Any:
-    """Delete a client (admin only)"""
-    client = session.get(Client, client_id)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    
+    """Delete a client"""
     # Check if client has children
     children = session.exec(
-        select(Client).where(Client.guardian_id == client_id)
+        select(Client).where(Client.guardian_id == client.id)
     ).all()
     
     if children:
@@ -299,11 +281,17 @@ def delete_client(
     
     # Delete QR codes associated with the client
     qr_codes = session.exec(
-        select(QRCode).where(QRCode.client_id == client_id)
+        select(QRCode).where(QRCode.client_id == client.id)
     ).all()
     
     for qr_code in qr_codes:
         session.delete(qr_code)
+    
+    # Update group_admin reference if client is an admin
+    if client.group_admin:
+        client.group_admin = None
+        session.add(client)
+        session.commit()
     
     session.delete(client)
     session.commit()

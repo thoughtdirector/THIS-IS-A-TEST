@@ -70,7 +70,7 @@ const PlanDetail = () => {
   const deletePlanMutation = useMutation({
     mutationFn: () => DashboardService.deletePlan({ id: planId }),
     onSuccess: () => {
-      navigate({ to: '/plans' });
+      navigate({ to: '/dashboard/plans' });
     },
   });
   
@@ -111,7 +111,7 @@ const PlanDetail = () => {
       <div className="container mx-auto py-6 max-w-5xl">
         <div className="flex items-center mb-6">
           <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to="/plans">
+            <Link to="/dashboard/plans">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -129,7 +129,7 @@ const PlanDetail = () => {
       <div className="container mx-auto py-6 max-w-5xl">
         <div className="flex items-center mb-6">
           <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to="/plans">
+            <Link to="/dashboard/plans">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -142,7 +142,7 @@ const PlanDetail = () => {
             <Button 
               variant="outline" 
               className="mt-2"
-              onClick={() => navigate({ to: '/plans' })}
+              onClick={() => navigate({ to: '/dashboard/plans' })}
             >
               Return to Plans
             </Button>
@@ -156,7 +156,7 @@ const PlanDetail = () => {
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/plans">
+          <Link to="/dashboard/plans">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -236,7 +236,7 @@ const PlanDetail = () => {
                 variant="outline" 
                 asChild
               >
-                <Link to={`/plans/${plan.id}/edit`} className="flex items-center">
+                <Link to={`/dashboard/plans/${plan.id}/edit`} className="flex items-center">
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Plan
                 </Link>
@@ -460,7 +460,7 @@ const PlanDetail = () => {
                         <TableCell>{formatCurrency(subscription.total_cost)}</TableCell>
                         <TableCell className="text-right">
                           <Button asChild size="sm" variant="outline">
-                            <Link to={`/subscriptions/${subscription.id}`}>
+                            <Link to={`/dashboard/subscriptions/${subscription.id}`}>
                               View
                             </Link>
                           </Button>
@@ -473,7 +473,7 @@ const PlanDetail = () => {
             </CardContent>
             <CardFooter>
               <Button variant="outline" asChild>
-                <Link to="/subscriptions/create" className="flex items-center">
+                <Link to="/dashboard/subscriptions/create" className="flex items-center">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Create New Subscription
                 </Link>

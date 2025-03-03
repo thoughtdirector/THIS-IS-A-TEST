@@ -9,9 +9,16 @@ import {
   LoginService,
   type UserPublic,
   type UserRegister,
+  type ClientCreate,
   UsersService,
 } from "../client"
 import useCustomToast from "./useCustomToast"
+
+// Define a new type for the combined user and client registration data
+type CombinedRegisterData = {
+  user: UserRegister;
+  client: ClientCreate;
+}
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -29,8 +36,8 @@ const useAuth = () => {
   })
 
   const signUpMutation = useMutation({
-    mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ requestBody: data }),
+    mutationFn: (data: CombinedRegisterData) =>
+      UsersService.signupUser({ requestBody: data }),
 
     onSuccess: () => {
       navigate({ to: "/login" })
@@ -41,6 +48,7 @@ const useAuth = () => {
       )
     },
     onError: (err: ApiError) => {
+      console.log(err)
       let errDetail = (err.body as any)?.detail
 
       if (err instanceof AxiosError) {

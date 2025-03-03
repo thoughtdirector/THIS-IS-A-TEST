@@ -53,11 +53,11 @@ export type UpdatePassword = {
 }
 
 export type UserCreate = {
-  email: string
-  is_active?: boolean
-  is_superuser?: boolean
-  full_name?: string | null
-  password: string
+  email: string;
+  password: string;
+  full_name?: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
 }
 
 export type UserPublic = {
@@ -96,4 +96,16 @@ export type ValidationError = {
   loc: Array<string | number>
   msg: string
   type: string
+}
+
+export type ClientCreate = {
+  identification: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  is_active?: boolean;
+  is_child?: boolean;
+  qr_code?: string | null;
+  guardian_id?: string | null;
+  children?: string[];
 }

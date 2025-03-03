@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { User, UserPlus, Search, RefreshCw, Filter, ChevronDown } from 'lucide-react';
+import { User, ArrowLeft, UserPlus, Search, RefreshCw, Filter, ChevronDown } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -123,9 +123,16 @@ const Clients = () => {
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Client Management</h1>
+      <div className="flex items-center mb-6">
+        <Button variant="outline" size="icon" asChild className="mr-4">
+          <Link to="/dashboard/">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <h1 className="text-2xl font-bold">Client Managementt</h1>
+      </div>
         <Button asChild>
-          <Link to="/clients/register" className="flex items-center">
+          <Link to="/dashboard/clients/register" className="flex items-center">
             <UserPlus className="mr-2 h-4 w-4" />
             Register New Client
           </Link>
@@ -247,12 +254,12 @@ const Clients = () => {
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
                               <Button asChild size="sm" variant="outline">
-                                <Link to={`/clients/${client.id}`}>
+                                <Link to={`/dashboard/clients/${client.id}`}>
                                   View
                                 </Link>
                               </Button>
                               <Button asChild size="sm" variant="outline">
-                                <Link to={`/clients/${client.id}/edit`}>
+                                <Link to={`/dashboard/clients/${client.id}/edit`}>
                                   Edit
                                 </Link>
                               </Button>
@@ -294,7 +301,7 @@ const Clients = () => {
                 </Button>
                 
                 <Button asChild>
-                  <Link to="/client-groups/create" className="flex items-center">
+                  <Link to="/dashboard/client-groups/create" className="flex items-center">
                     <UserPlus className="mr-2 h-4 w-4" />
                     New Group
                   </Link>
@@ -342,12 +349,12 @@ const Clients = () => {
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
                               <Button asChild size="sm" variant="outline">
-                                <Link to={`/client-groups/${group.id}`}>
+                                <Link to={`/dashboard/client-groups/${group.id}`}>
                                   View
                                 </Link>
                               </Button>
                               <Button asChild size="sm" variant="outline">
-                                <Link to={`/client-groups/${group.id}/edit`}>
+                                <Link to={`/dashboard/client-groups/${group.id}/edit`}>
                                   Edit
                                 </Link>
                               </Button>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CreditCard, Search, RefreshCw, Filter, ChevronDown, Calendar, DollarSign, Download } from 'lucide-react';
+import { CreditCard,ArrowLeft, Search, RefreshCw, Filter, ChevronDown, Calendar, DollarSign, Download } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -189,9 +189,16 @@ const Payments = () => {
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Payment Management</h1>
+        <div className="flex items-center mb-6">
+          <Button variant="outline" size="icon" asChild className="mr-4">
+            <Link to="/dashboard/">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">Payment Management</h1>
+        </div>
         <Button asChild>
-          <Link to="/payments/create" className="flex items-center">
+          <Link to="/dashboard/payments/create" className="flex items-center">
             <CreditCard className="mr-2 h-4 w-4" />
             Process New Payment
           </Link>
@@ -384,7 +391,7 @@ const Payments = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <Button asChild size="sm" variant="outline">
-                              <Link to={`/payments/${payment.id}`}>
+                              <Link to={`/dashboard/payments/${payment.id}`}>
                                 View
                               </Link>
                             </Button>

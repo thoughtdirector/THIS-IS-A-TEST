@@ -29,15 +29,39 @@ const SignUp = () => {
     mode: 'onBlur',
     criteriaMode: 'all',
     defaultValues: {
+      // User information
       email: '',
       full_name: '',
       password: '',
       confirm_password: '',
+      
+      // Client information
+      identification: '',
+      phone: '',
     },
   });
 
   const onSubmit = (data) => {
-    signUpMutation.mutate(data);
+    // Prepare the data for the API by separating user and client information
+    const { confirm_password, ...formData } = data;
+    
+    const signupData = {
+      user_in: {
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.full_name,
+      },
+      client_in: {
+        identification: formData.identification,
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone,
+        is_active: true,
+        is_child: false,
+      }
+    };
+    
+    signUpMutation.mutate(signupData);
   };
 
   return (
@@ -62,6 +86,19 @@ const SignUp = () => {
                 <p className="text-sm text-red-500">{errors.full_name.message}</p>
               )}
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="identification">Identification</Label>
+              <Input
+                id="identification"
+                {...register("identification", { required: "Identification is required" })}
+                placeholder="National ID or Passport"
+              />
+              {errors.identification && (
+                <p className="text-sm text-red-500">{errors.identification.message}</p>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -77,6 +114,25 @@ const SignUp = () => {
                 <p className="text-sm text-red-500">{errors.email.message}</p>
               )}
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                {...register("phone", { 
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
+                    message: "Please enter a valid phone number"
+                  }
+                })}
+                placeholder="+1 (555) 123-4567"
+              />
+              {errors.phone && (
+                <p className="text-sm text-red-500">{errors.phone.message}</p>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -89,6 +145,7 @@ const SignUp = () => {
                 <p className="text-sm text-red-500">{errors.password.message}</p>
               )}
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="confirm_password">Confirm Password</Label>
               <Input
@@ -101,6 +158,7 @@ const SignUp = () => {
                 <p className="text-sm text-red-500">{errors.confirm_password.message}</p>
               )}
             </div>
+            
             <Button className="w-full" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Signing up...' : 'Sign Up'}
             </Button>

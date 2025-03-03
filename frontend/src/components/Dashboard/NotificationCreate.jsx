@@ -66,7 +66,7 @@ const NotificationCreate = () => {
     mutationFn: DashboardService.createNotification,
     onSuccess: () => {
       queryClient.invalidateQueries(['notifications']);
-      navigate({ to: '/' });
+      navigate({ to: '/dashboard' });
     },
   });
   
@@ -127,7 +127,7 @@ const NotificationCreate = () => {
     <div className="container mx-auto py-6 max-w-3xl">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/">
+          <Link to="/dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -305,7 +305,7 @@ const NotificationCreate = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate({ to: '/' })}
+              onClick={() => navigate({ to: '/dashboard' })}
             >
               Cancel
             </Button>

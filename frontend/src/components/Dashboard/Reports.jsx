@@ -553,7 +553,7 @@ const Reports = () => {
                             asChild
                             className="p-0 h-auto mt-2"
                           >
-                            <Link to={`/plans/${plan.id}`}>
+                            <Link to={`/dashboard/plans/${plan.id}`}>
                               View Plan Details
                             </Link>
                           </Button>
@@ -565,7 +565,7 @@ const Reports = () => {
               </CardContent>
               <CardFooter className="flex justify-end">
                 <Button asChild variant="outline">
-                  <Link to="/plans" className="flex items-center">
+                  <Link to="/dashboard/plans" className="flex items-center">
                     <BarChartIcon className="mr-2 h-4 w-4" />
                     Manage Subscription Plans
                   </Link>

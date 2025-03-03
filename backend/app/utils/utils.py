@@ -115,3 +115,9 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+tz = timezone(timedelta(hours=-5))
+
+def aware_now():
+    utc_minus_5 = tz
+    return datetime.now(utc_minus_5)

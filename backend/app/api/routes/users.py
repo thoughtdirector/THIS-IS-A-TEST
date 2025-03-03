@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select, SQLModel
@@ -24,7 +24,10 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
     Client,
-    ClientCreate
+    ClientCreate,
+    QRCode,
+    ClientGroup,
+    ClientPublic
 
 )
 from app.utils.utils import generate_new_account_email, send_email
@@ -184,11 +187,15 @@ class ClientRegister(SQLModel):
     full_name: str 
     phone: str 
 
-@router.post("/signup", response_model=UserPublic)
+@router.post("/signup-r", response_model=UserPublic)
 def register_client(session: SessionDep, user_in: ClientRegister) -> Any:
     """
     Create new user without the need to be logged in.
     """
+    raise HTTPException(
+            status_code=404,
+            detail="",
+        )
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
@@ -218,9 +225,9 @@ def register_client(session: SessionDep, user_in: ClientRegister) -> Any:
 
     return user
 
-@router.post("/register", response_model=Dict[str, Any])
+@router.post("/signup", response_model=Dict[str, Any])
 def register_user(
-    *, session: SessionDep, user_in: UserCreate, client_in: ClientCreate
+    *, session: SessionDep, user_in: UserRegister, client_in: ClientCreate
 ) -> Any:
     """
     Register a new user with associated client and client group.
@@ -249,22 +256,22 @@ def register_user(
         is_active=True,
     )
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    
+   
+  
     # Create client
+
     db_client = Client.model_validate(client_in)
+  
     db_client.user_id = db_user.id
     session.add(db_client)
     session.commit()
-    session.refresh(db_client)
+
     
     # Create QR code for the client
     qr_code = QRCode(client_id=db_client.id)
     session.add(qr_code)
-    session.commit()
-    session.refresh(qr_code)
     
+
     # Update client with QR code ID
     db_client.qr_code = str(qr_code.id)
     session.add(db_client)
@@ -273,17 +280,16 @@ def register_user(
     group_name = f"{db_client.full_name}'s Group"
     client_group = ClientGroup(name=group_name)
     session.add(client_group)
-    session.commit()
-    session.refresh(client_group)
     
+
     # Add the client to the group
     db_client.group_id = client_group.id
     session.add(db_client)
     
     # Make the user an admin of the group
-    admin_link = ClientGroupAdminLink(client_group_id=client_group.id, admin_id=db_user.id)
-    session.add(admin_link)
     
+   
+    client_group.admins.append(db_client)
     session.commit()
     session.refresh(db_client)
     

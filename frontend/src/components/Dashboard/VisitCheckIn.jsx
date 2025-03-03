@@ -111,9 +111,12 @@ const VisitCheckIn = () => {
   
   const getTimeElapsed = (checkInTime) => {
     if (!checkInTime) return '';
+    const userOffset = new Date().getTimezoneOffset()*60*1000;
     const checkIn = new Date(checkInTime);
+    
     const now = new Date();
     const diffMs = now - checkIn;
+   
     const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     
@@ -154,7 +157,7 @@ const VisitCheckIn = () => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to="/">
+            <Link to="/dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>

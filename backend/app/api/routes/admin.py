@@ -7,7 +7,9 @@ from datetime import datetime
 from app.api.deps import CurrentUser, SessionDep, GetAdminUser
 from app.models import (
     Client,  Visit, Notification, NotificationCreate,
-    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, SubscriptionCreate, ClientGroup, Reservation, ReservationPublic
+    Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, 
+    SubscriptionCreate, ClientGroup, Reservation, ReservationPublic, ClientGroupPublic,
+    SubscriptionPublic
 )
 import uuid
 from typing import Optional, List, Dict, Any
@@ -27,7 +29,7 @@ def get_all_clients(
     return clients
 
 # Client Management Routes
-@router.get("/client-groups", response_model=list[ClientPublic])
+@router.get("/client-groups", response_model=list[ClientGroupPublic])
 def get_all_clients(
     session: SessionDep,
     current_user: GetAdminUser,
@@ -246,6 +248,31 @@ def get_all_visits(
     statement = select(Visit).offset(skip).limit(limit)
     visits = session.exec(statement).all()
     return visits
+
+
+@router.get("/all-payments", response_model=list[VisitPublic])
+def get_all_visits(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    statement = select(Payment).offset(skip).limit(limit)
+    payments = session.exec(statement).all()
+    return payments
+
+
+@router.get("/all-subscriptions", response_model=list[SubscriptionPublic])
+def get_all_visits(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    statement = select(Subscription).offset(skip).limit(limit)
+    subscriptions = session.exec(statement).all()
+    return subscriptions
+
 
 @router.get("/all-active-visits", response_model=list[VisitPublic])
 def get_all_active_visits(

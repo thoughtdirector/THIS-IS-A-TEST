@@ -101,7 +101,7 @@ const PaymentCreate = () => {
     mutationFn: ClientService.createPayment,
     onSuccess: () => {
       queryClient.invalidateQueries(['payments']);
-      navigate({ to: '/payments' });
+      navigate({ to: '/dashboard/payments' });
     },
   });
   
@@ -164,7 +164,7 @@ const PaymentCreate = () => {
     <div className="container mx-auto py-6 max-w-3xl">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/payments">
+          <Link to="/dashboard/payments">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -319,7 +319,7 @@ const PaymentCreate = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate({ to: '/payments' })}
+                  onClick={() => navigate({ to: '/dashboard/payments' })}
                 >
                   Cancel
                 </Button>
@@ -523,7 +523,7 @@ const PaymentCreate = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate({ to: '/payments' })}
+                  onClick={() => navigate({ to: '/dashboard/payments' })}
                 >
                   Cancel
                 </Button>

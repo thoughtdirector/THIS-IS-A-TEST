@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarPlus, Search, RefreshCw, Filter, ChevronDown, Calendar, Clock, Check, X } from 'lucide-react';
+import { CalendarPlus, ArrowLeft, Search, RefreshCw, Filter, ChevronDown, Calendar, Clock, Check, X } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -208,7 +208,14 @@ const Reservations = () => {
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center mb-6">
+        <Button variant="outline" size="icon" asChild className="mr-4">
+          <Link to="/dashboard/">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
         <h1 className="text-2xl font-bold">Reservations</h1>
+      </div>
         <Button asChild>
           <Link to="/dashboard/reservations/create" className="flex items-center">
             <CalendarPlus className="mr-2 h-4 w-4" />

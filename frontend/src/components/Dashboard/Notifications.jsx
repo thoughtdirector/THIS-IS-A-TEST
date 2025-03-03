@@ -196,7 +196,7 @@ const Notifications = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Notification History</h1>
         <Button asChild>
-          <Link to="/notifications/create" className="flex items-center">
+          <Link to="/dashboard/notifications/create" className="flex items-center">
             <Send className="mr-2 h-4 w-4" />
             Send New Notification
           </Link>
@@ -411,7 +411,7 @@ const Notifications = () => {
                             Resend
                           </Button>
                           <Button asChild size="sm" variant="outline">
-                            <Link to={`/notifications/${notification.id}`}>
+                            <Link to={`/dashboard/notifications/${notification.id}`}>
                               View
                             </Link>
                           </Button>

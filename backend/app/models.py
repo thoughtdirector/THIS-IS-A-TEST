@@ -133,10 +133,7 @@ class User(SQLModel, table=True):
     admin_user: Optional["AdminUser"] = Relationship(back_populates="user")
     
 
-    client_groups: List["ClientGroup"] = Relationship(
-        link_model=ClientGroupAdminLink,
-        back_populates="admins"
-    )
+    client: Optional["Client"] = Relationship(back_populates="user")
 
    
 
@@ -160,14 +157,15 @@ class ClientPublic(SQLModel):
 
 
 class ClientCreate(SQLModel):
+    identification: str = Field(max_length=255)
     full_name: str = Field(max_length=255)
     email: EmailStr = Field(index=True)
     phone: str = Field(max_length=20)
     is_active: bool = True
     is_child: bool = False
     qr_code: Optional[str] = None
-    guardian_id: Optional[uuid.UUID] = None  # Added to allow linking a child to a guardian
-    children: List[uuid.UUID] = Field(default_factory=list)
+    
+ 
 
 class ClientUpdate(SQLModel):
     full_name: Optional[str] = Field(default=None, max_length=255)
@@ -176,33 +174,36 @@ class ClientUpdate(SQLModel):
     is_active: Optional[bool] = None
     is_child: Optional[bool] = None
     qr_code: Optional[str] = None
-    guardian_id: Optional[uuid.UUID] = None  # Added to allow updating the guardian reference
-    children: Optional[List[uuid.UUID]] = None
+    
+
 
 
 class Client(ClientBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    
+    identification: Optional[str] = Field(max_length=255)
     user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    user: Optional["User"] = Relationship(back_populates="client")
     group_id: Optional[uuid.UUID] = Field(default=None, foreign_key="clientgroup.id")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    guardian_id: Optional[uuid.UUID] = Field(default=None, foreign_key="client.id")
-    children: List["Client"] = Relationship(
-        back_populates="guardian",
-        sa_relationship_kwargs={"remote_side": "Client.id"}
-    )
-    guardian: Optional["Client"] = Relationship(
-        back_populates="children",
-        sa_relationship_kwargs={"remote_side": "Client.guardian_id"}
-    )
- 
     
+    is_child: bool = Field(default=False)
     visits: List["Visit"] = Relationship(back_populates="client")
     group: Optional["ClientGroup"] = Relationship(back_populates="clients")
     qr_codes: List["QRCode"] = Relationship(back_populates="client")
+    group_admin: Optional["ClientGroup"] = Relationship(back_populates="admins")
 
+
+
+class ClientGroupPublic(SQLModel):
+    id: uuid.UUID 
+    name:str 
+    created_at: datetime 
+    clients: List[Client]
+    subscriptions: List["Subscription"] 
+    reservations: List["Reservation"] 
+    admins: List[Client] 
 
 class ClientGroup(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -216,9 +217,8 @@ class ClientGroup(SQLModel, table=True):
     subscriptions: List["Subscription"] = Relationship(back_populates="client_group")
     reservations: List["Reservation"] = Relationship(back_populates="client_group")
     # Relationship: the user(s) (e.g. parent accounts) that can administer the group
-    admins: List[User] = Relationship(
-        link_model=ClientGroupAdminLink,
-        back_populates="client_groups"
+    admins: List[Client] = Relationship(
+        back_populates="group_admin"
     )
 
 
@@ -392,23 +392,23 @@ class PaymentCreate(SQLModel):
     client_id: uuid.UUID
     amount: float
     payment_method: str = Field(max_length=50)
-    transaction_id: str = Field(max_length=255)
-    subscription_id: Optional[uuid.UUID] = None
+    transaction_id: Optional[str] = Field(max_length=255)
+    plan_id: Optional[uuid.UUID] = None
 
 class PaymentPublic(SQLModel):
-    client_id: uuid.UUID
+    client_group_id: uuid.UUID
     amount: float
     status: str
 
 class Payment(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    client_id: uuid.UUID = Field(foreign_key="client.id")
+    client_group_id: uuid.UUID = Field(foreign_key="clientgroup.id")
     amount: float
     status: str = Field(max_length=20)  # pending, completed, failed, refunded
     payment_method: str = Field(max_length=50)
     transaction_id: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
+    plan_id: Optional[uuid.UUID] = Field(foreign_key="plan.id")
 
 class AdminUser(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
