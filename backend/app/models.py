@@ -339,7 +339,10 @@ class Reservation(SQLModel, table=True):
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
     client_amount: int = Field(default=1)
     client_group: "ClientGroup" = Relationship(back_populates="reservations")
-    
+    details: Dict[str, Any] = Field(
+        sa_column=Column(mutable_json_type(JSONB)), 
+        default_factory=dict
+    )
 
 class VisitCreate(SQLModel):
     client_id: uuid.UUID
@@ -374,6 +377,10 @@ class Visit(SQLModel, table=True):
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
     client: Client = Relationship(back_populates="visits")
     notes: Optional[str] = Field(default = None, max_length = 1024)
+    details: Dict[str, Any] = Field(
+        sa_column=Column(mutable_json_type(JSONB)), 
+        default_factory=dict
+    )
 
 class NotificationCreate(SQLModel):
     message: str

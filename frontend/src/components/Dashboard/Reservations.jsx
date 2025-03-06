@@ -174,7 +174,7 @@ const Reservations = () => {
             {reservations.map((reservation) => (
               <TableRow key={reservation.id}>
                 <TableCell className="font-medium">
-                  {reservation.client_name || `Client #${reservation.client_id}`}
+                  {reservation.client_name || `Client #${reservation.client_group_id}`}
                 </TableCell>
                 <TableCell>{formatDate(reservation.date)}</TableCell>
                 <TableCell>{formatTime(reservation.date)}</TableCell>

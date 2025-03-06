@@ -76,8 +76,8 @@ def check_in_client(
         .where(Subscription.client_group_id == client.group_id)
         .where(Subscription.is_active == True)
     ).first()
-    if not subscription:
-        raise HTTPException(status_code=400, detail="No active subscription found for this client's group")
+    # if not subscription: CAN CREATE WITHOUT A SUBSCRIPTION
+    #     raise HTTPException(status_code=400, detail="No active subscription found for this client's group")
   
     
     # Ensure there is no already active visit
@@ -92,7 +92,7 @@ def check_in_client(
     visit = Visit(
         client_id=client_id,
         check_in=check_in if check_in is not None else datetime.utcnow(),
-        subscription_id=subscription.id  # Linking the visit to the subscription if needed
+        subscription_id=subscription.id if subscription else None  # Linking the visit to the subscription if needed
         
     )
     

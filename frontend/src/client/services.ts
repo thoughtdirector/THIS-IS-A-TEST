@@ -286,7 +286,7 @@ export class UsersService {
    * @throws ApiError
    */
   public static registerUser(
-    data: TDataRegisterUser,
+    data,
   ): CancelablePromise<UserPublic> {
     const { requestBody } = data
     return __request(OpenAPI, {
@@ -307,7 +307,7 @@ export class UsersService {
    * @throws ApiError
    */
   public static signupUser(
-    data: TDataRegisterUser,
+    data,
   ): CancelablePromise<UserPublic> {
     const { requestBody } = data
     return __request(OpenAPI, {

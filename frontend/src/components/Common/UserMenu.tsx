@@ -9,7 +9,7 @@ import {
 import { Link } from "@tanstack/react-router"
 import { FaUserAstronaut } from "react-icons/fa"
 import { FiLogOut, FiUser } from "react-icons/fi"
-
+import { CiUser } from "react-icons/ci";
 import useAuth from "../../hooks/useAuth"
 
 const UserMenu = () => {
@@ -32,7 +32,8 @@ const UserMenu = () => {
           <MenuButton
             as={IconButton}
             aria-label="Options"
-            icon={<FaUserAstronaut color="white" fontSize="18px" />}
+            
+            icon={<CiUser  color="white" fontSize="18px" />}
             bg="ui.main"
             isRound
             data-testid="user-menu"

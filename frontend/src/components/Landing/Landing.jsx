@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Clock, MapPin, Phone, Mail, Coffee, Users, Gift, Briefcase, Package, Dog, Menu } from 'lucide-react';
-
+import Logo from "/assets/images/logo.png"
 const Landing = () => {
   return (
     <div className="flex flex-col min-h-screen bg-stone-50">
@@ -16,6 +16,7 @@ const Landing = () => {
             <a href="#servicios" className="hover:text-amber-200 transition">Servicios</a>
             <a href="#horarios" className="hover:text-amber-200 transition">Horarios</a>
             <a href="#contacto" className="hover:text-amber-200 transition">Contacto</a>
+            <a href="/login" className="hover:text-amber-200 transition">Login</a>
           </div>
           <div className="md:hidden">
             <button className="p-1">
@@ -31,14 +32,14 @@ const Landing = () => {
         <div className="absolute inset-0 bg-black/30 z-10"></div>
         <div className="relative w-full h-96 md:h-screen max-h-[600px] overflow-hidden">
           <img 
-            src="/api/placeholder/1200/600" 
+            src={Logo} 
             alt="Casa en el Árbol - Parque infantil" 
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60 z-10"></div>
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20 p-6">
             <h1 className="text-5xl md:text-7xl font-bold mb-4 text-white text-center uppercase tracking-wider">
-              LA CASA EN EL ÁRBOL
+              
             </h1>
           </div>
         </div>
@@ -54,7 +55,7 @@ const Landing = () => {
         <div className="relative mx-auto max-w-lg -mt-16 z-30 flex justify-center">
           <div className="bg-white p-4 rounded-full shadow-lg">
             <img 
-              src="/api/placeholder/120/120" 
+              src={Logo}
               alt="Logo Casa en el Árbol" 
               className="w-24 h-24 object-contain"
             />
