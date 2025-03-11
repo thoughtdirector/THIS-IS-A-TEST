@@ -1051,6 +1051,75 @@ export class DashboardService {
     });
   }
 
+  public static getPlan(data) {
+    const { id } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/admin/plans/${id}`,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static updatePlan(data) {
+    const { id, ...updateData } = data;
+    
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: `/api/v1/admin/plans/${id}`,
+      body: updateData,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static deletePlan(data) {
+    const { id } = data;
+    
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: `/api/v1/admin/plans/${id}`,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getPlanSubscriptions(data) {
+    const { plan_id, skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/admin/plans/${plan_id}/subscriptions`,
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
   // Reservation management
   public static getAllReservations(data) {
     const { skip = 0, limit = 100, upcoming_only = false } = data;

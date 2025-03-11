@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { PlusCircle, ArrowLeft, Search, RefreshCw, Filter, ChevronDown, Clock, CreditCard, Calendar } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Search, RefreshCw, Filter, ChevronDown, Clock, CreditCard, Calendar, Trash2, Plus } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const Plans = () => {
   const queryClient = useQueryClient();
@@ -42,6 +43,11 @@ const Plans = () => {
     duration_hours: '',
     is_class_plan: false,
     max_classes: '',
+    addons: [],
+  });
+  const [newAddon, setNewAddon] = useState({
+    name: '',
+    price: '',
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
@@ -88,6 +94,11 @@ const Plans = () => {
       duration_hours: '',
       is_class_plan: false,
       max_classes: '',
+      addons: [],
+    });
+    setNewAddon({
+      name: '',
+      price: '',
     });
   };
   
@@ -109,174 +120,58 @@ const Plans = () => {
       duration_days: newPlan.duration_days ? parseInt(newPlan.duration_days) : null,
       duration_hours: newPlan.duration_hours ? parseInt(newPlan.duration_hours) : null,
       max_classes: newPlan.max_classes ? parseInt(newPlan.max_classes) : null,
+      // Convert addons array to an object with addon names as keys and prices as values
+      addons: newPlan.addons.reduce((acc, addon) => {
+        acc[addon.name] = parseFloat(addon.price);
+        return acc;
+      }, {}),
     };
     
     createPlanMutation.mutate(planData);
+  };
+
+  const handleAddAddon = () => {
+    if (newAddon.name && newAddon.price) {
+      setNewPlan({
+        ...newPlan,
+        addons: [...newPlan.addons, { ...newAddon }]
+      });
+      setNewAddon({ name: '', price: '' });
+    }
+  };
+
+  const handleAddonChange = (e) => {
+    const { name, value } = e.target;
+    setNewAddon({
+      ...newAddon,
+      [name]: value,
+    });
+  };
+
+  const handleRemoveAddon = (index) => {
+    setNewPlan({
+      ...newPlan,
+      addons: newPlan.addons.filter((_, i) => i !== index)
+    });
   };
   
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-      <div className="flex items-center mb-6">
-        <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/dashboard/">
-            <ArrowLeft className="h-4 w-4" />
+        <div className="flex items-center">
+          <Button variant="outline" size="icon" asChild className="mr-4">
+            <Link to="/dashboard/">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">Membership Plans</h1>
+        </div>
+        <Button asChild>
+          <Link to="/dashboard/plans/create">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New Plan
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Membership Plans</h1>
-      </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Plan
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Create New Membership Plan</DialogTitle>
-              <DialogDescription>
-                Define the details of the new membership plan.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreatePlan}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Plan Name
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={newPlan.name}
-                    onChange={handleNewPlanChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Input
-                    id="description"
-                    name="description"
-                    value={newPlan.description}
-                    onChange={handleNewPlanChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">
-                    Price
-                  </Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPlan.price}
-                    onChange={handleNewPlanChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                
-                <Separator className="my-2" />
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="duration_days" className="text-right">
-                    Duration (Days)
-                  </Label>
-                  <Input
-                    id="duration_days"
-                    name="duration_days"
-                    type="number"
-                    min="1"
-                    value={newPlan.duration_days}
-                    onChange={handleNewPlanChange}
-                    className="col-span-3"
-                    placeholder="e.g., 30 for a monthly plan"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="duration_hours" className="text-right">
-                    Hours per Visit
-                  </Label>
-                  <Input
-                    id="duration_hours"
-                    name="duration_hours"
-                    type="number"
-                    min="1"
-                    value={newPlan.duration_hours}
-                    onChange={handleNewPlanChange}
-                    className="col-span-3"
-                    placeholder="Leave empty for unlimited hours"
-                  />
-                </div>
-                
-                <Separator className="my-2" />
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="is_class_plan" className="text-right">
-                    Class-based Plan
-                  </Label>
-                  <div className="flex items-center space-x-2 col-span-3">
-                    <Switch
-                      id="is_class_plan"
-                      name="is_class_plan"
-                      checked={newPlan.is_class_plan}
-                      onCheckedChange={(checked) => 
-                        setNewPlan({...newPlan, is_class_plan: checked})
-                      }
-                    />
-                    <Label htmlFor="is_class_plan">
-                      Enable for class-based subscriptions
-                    </Label>
-                  </div>
-                </div>
-                
-                {newPlan.is_class_plan && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="max_classes" className="text-right">
-                      Max Classes
-                    </Label>
-                    <Input
-                      id="max_classes"
-                      name="max_classes"
-                      type="number"
-                      min="1"
-                      value={newPlan.max_classes}
-                      onChange={handleNewPlanChange}
-                      className="col-span-3"
-                      required={newPlan.is_class_plan}
-                    />
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    resetNewPlanForm();
-                    setIsDialogOpen(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPlanMutation.isPending}
-                >
-                  {createPlanMutation.isPending ? "Creating..." : "Create Plan"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
       
       <div className="flex items-center justify-between mb-6">

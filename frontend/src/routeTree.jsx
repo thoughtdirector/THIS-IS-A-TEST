@@ -26,6 +26,7 @@ import Clients from './components/Dashboard/Clients'
 import ClientRegister from './components/Dashboard/ClientRegister'
 import Plans from './components/Dashboard/Plans'
 import PlanDetail from './components/Dashboard/PlanDetail'
+import PlanCreate from './components/Dashboard/PlanCreate'
 import Reservations from './components/Dashboard/Reservations'
 import ReservationCreate from './components/Dashboard/ReservationCreate'
 import Reports from './components/Dashboard/Reports'
@@ -191,6 +192,12 @@ const planDetailRoute = createRoute({
   component: PlanDetail,
 })
 
+const planCreateRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/plans/create',
+  component: PlanCreate,
+})
+
 // Reservation routes
 const reservationsRoute = createRoute({
   getParentRoute: () => layoutRoute,
@@ -250,6 +257,7 @@ const routeTree = rootRoute.addChildren([
       clientRegisterRoute,
       plansRoute,
       planDetailRoute,
+      planCreateRoute,
       reservationsRoute,
       reservationCreateRoute,
       visitCheckInRoute,

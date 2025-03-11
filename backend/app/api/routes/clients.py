@@ -229,6 +229,7 @@ def get_client(
     *, 
     client: GetClientFromPath
 ) -> Any:
+
     """Get a specific client by ID (using dependency)"""
     return client
 

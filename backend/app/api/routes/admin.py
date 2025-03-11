@@ -499,15 +499,26 @@ def get_all_plans(
     limit: int = 100,
     active_only: bool = False
 ) -> Any:
-    """Get all service plans"""
-    statement = select(Plan)
+    query = select(Plan)
     
     if active_only:
-        statement = statement.where(Plan.is_active == True)
+        query = query.where(Plan.is_active == True)
     
-    statement = statement.offset(skip).limit(limit).order_by(Plan.name)
-    plans = session.exec(statement).all()
+    query = query.offset(skip).limit(limit)
+    plans = session.exec(query).all()
     return plans
+
+@router.get("/plans/{plan_id}", response_model=Plan)
+def get_plan_by_id(
+    *, session: SessionDep, current_user: GetAdminUser, plan_id: uuid.UUID
+) -> Any:
+    """
+    Get a specific plan by ID
+    """
+    plan = session.exec(select(Plan).where(Plan.id == plan_id)).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
 
 # Get all reservations endpoint
 @router.get("/all-reservations", response_model=list[ReservationPublic])

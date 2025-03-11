@@ -232,6 +232,7 @@ class PlanUpdate(SQLModel):
     is_class_plan: Optional[bool] = None
     max_classes: Optional[int] = None
     is_active: Optional[bool] = None
+    addons: Optional[Dict[str, Any]] = None
 
 class PlanCreate(SQLModel):
     name: str = Field(max_length=255)
@@ -241,6 +242,7 @@ class PlanCreate(SQLModel):
     duration_days: Optional[int] = None   # For subscription length
     is_class_plan: bool = False
     max_classes: Optional[int] = None
+    addons: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure describing available add-ons with their pricing")
 
 class Plan(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -252,8 +254,10 @@ class Plan(SQLModel, table=True):
     is_class_plan: bool = False
     max_classes: Optional[int] = None
     is_active: bool = True
+    addons: Dict = Field(default_factory=list, 
+                         sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
-    #created_by_id: uuid.UUID = Field(default=None, foreign_key="user.id")
+    payments: List["Payment"] = Relationship(back_populates="plan")
     
 
 class SubscriptionCreate(SQLModel):
@@ -401,11 +405,13 @@ class PaymentCreate(SQLModel):
     payment_method: str = Field(max_length=50)
     transaction_id: Optional[str] = Field(max_length=255)
     plan_id: Optional[uuid.UUID] = None
+    purchased_addons: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure describing purchased add-ons and their quantities")
 
 class PaymentPublic(SQLModel):
     client_group_id: uuid.UUID
     amount: float
     status: str
+    purchased_addons: Optional[Dict[str, Any]] = None
 
 class Payment(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -416,6 +422,8 @@ class Payment(SQLModel, table=True):
     transaction_id: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     plan_id: Optional[uuid.UUID] = Field(foreign_key="plan.id")
+    purchased_addons: Dict = Field(default_factory=list, sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
+    plan: Optional["Plan"] = Relationship(back_populates="payments")
 
 class AdminUser(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

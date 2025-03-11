@@ -223,6 +223,33 @@ const PlanDetail = () => {
             </Card>
           </div>
           
+          {/* Add the addons section */}
+          {plan.addons && Object.keys(plan.addons).length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Available Add-ons</h3>
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Add-on Name</TableHead>
+                        <TableHead>Price per Unit</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(plan.addons).map(([name, price]) => (
+                        <TableRow key={name}>
+                          <TableCell>{name}</TableCell>
+                          <TableCell>{formatCurrency(price)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
           <div className="flex justify-between">
             <div className="space-x-2">
               <Button 
