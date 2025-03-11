@@ -34,7 +34,10 @@ const useAuth = () => {
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
   })
-
+  console.log("AAAAAAAAAAAAA", user)
+  // Check if the user is an admin
+  const isAdmin = user?.admin_user !== undefined && user?.admin_user !== null
+  
   const signUpMutation = useMutation({
     mutationFn: (data: CombinedRegisterData) =>
       UsersService.signupUser({ requestBody: data }),
@@ -72,6 +75,7 @@ const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      // We'll redirect to the appropriate dashboard in the route component
       navigate({ to: "/dashboard" })
     },
     onError: (err: ApiError) => {
@@ -100,6 +104,7 @@ const useAuth = () => {
     logout,
     user,
     isLoading,
+    isAdmin,
     error,
     resetError: () => setError(null),
   }

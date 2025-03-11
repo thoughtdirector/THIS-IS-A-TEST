@@ -24,9 +24,12 @@ const PlanCreate = () => {
     price: '',
     duration_days: '',
     duration_hours: '',
-    is_class_plan: false,
-    max_classes: '',
+    entries: '',
     addons: [],
+    limits: {
+      users: '',
+      time: ''
+    }
   });
   
   const [newAddon, setNewAddon] = useState({
@@ -50,9 +53,12 @@ const PlanCreate = () => {
       price: '',
       duration_days: '',
       duration_hours: '',
-      is_class_plan: false,
-      max_classes: '',
+      entries: '',
       addons: [],
+      limits: {
+        users: '',
+        time: ''
+      }
     });
     setNewAddon({
       name: '',
@@ -67,6 +73,17 @@ const PlanCreate = () => {
       [name]: type === 'checkbox' ? checked : value,
     });
   };
+
+  const handleLimitsChange = (e) => {
+    const { name, value } = e.target;
+    setNewPlan({
+      ...newPlan,
+      limits: {
+        ...newPlan.limits,
+        [name]: value
+      }
+    });
+  };
   
   const handleCreatePlan = (e) => {
     e.preventDefault();
@@ -77,12 +94,17 @@ const PlanCreate = () => {
       price: parseFloat(newPlan.price),
       duration_days: newPlan.duration_days ? parseInt(newPlan.duration_days) : null,
       duration_hours: newPlan.duration_hours ? parseInt(newPlan.duration_hours) : null,
-      max_classes: newPlan.max_classes ? parseInt(newPlan.max_classes) : null,
+      entries: newPlan.entries ? parseInt(newPlan.entries) : null,
       // Convert addons array to an object with addon names as keys and prices as values
       addons: newPlan.addons.reduce((acc, addon) => {
         acc[addon.name] = parseFloat(addon.price);
         return acc;
       }, {}),
+      // Convert limits values to numbers
+      limits: {
+        users: newPlan.limits.users ? parseInt(newPlan.limits.users) : null,
+        time: newPlan.limits.time ? parseInt(newPlan.limits.time) : null
+      }
     };
     
     createPlanMutation.mutate(planData);
@@ -212,34 +234,56 @@ const PlanCreate = () => {
               <Separator />
               
               <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_class_plan"
-                    name="is_class_plan"
-                    checked={newPlan.is_class_plan}
-                    onCheckedChange={(checked) => 
-                      setNewPlan({...newPlan, is_class_plan: checked})
-                    }
+                <h3 className="text-md font-medium">Plan Entries & Limits</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="entries">Number of Entries</Label>
+                  <Input
+                    id="entries"
+                    name="entries"
+                    type="number"
+                    min="1"
+                    value={newPlan.entries}
+                    onChange={handleNewPlanChange}
+                    placeholder="e.g., 10 entries"
                   />
-                  <Label htmlFor="is_class_plan">This is a class-based plan</Label>
+                  <p className="text-sm text-gray-500">Number of times this plan can be used. Works for party packs (1 entry) or multi-class passes.</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 gap-4">
+                <h3 className="text-md font-medium">Access Limits</h3>
+                <p className="text-sm text-gray-500">Define limits for token-based access</p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="users">Maximum Users</Label>
+                  <Input
+                    id="users"
+                    name="users"
+                    type="number"
+                    min="1"
+                    value={newPlan.limits.users}
+                    onChange={handleLimitsChange}
+                    placeholder="e.g., 5 users"
+                  />
+                  <p className="text-sm text-gray-500">Maximum number of users that can access this plan with a token</p>
                 </div>
                 
-                {newPlan.is_class_plan && (
-                  <div className="space-y-2 ml-6">
-                    <Label htmlFor="max_classes">Maximum Classes</Label>
-                    <Input
-                      id="max_classes"
-                      name="max_classes"
-                      type="number"
-                      min="1"
-                      value={newPlan.max_classes}
-                      onChange={handleNewPlanChange}
-                      required={newPlan.is_class_plan}
-                      placeholder="e.g., 10 classes"
-                    />
-                    <p className="text-sm text-gray-500">Maximum number of classes included in this plan</p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="time">Time Limit (hours)</Label>
+                  <Input
+                    id="time"
+                    name="time"
+                    type="number"
+                    min="1"
+                    value={newPlan.limits.time}
+                    onChange={handleLimitsChange}
+                    placeholder="e.g., 10 hours"
+                  />
+                  <p className="text-sm text-gray-500">Total time allotted for this plan when accessed via token</p>
+                </div>
               </div>
               
               <Separator />

@@ -3,13 +3,16 @@ from sqlmodel import select, func, SQLModel, desc
 from typing import Any
 from datetime import timedelta
 from datetime import datetime
+import random
+import string
 
 from app.api.deps import CurrentUser, SessionDep, GetAdminUser
 from app.models import (
     Client,  Visit, Notification, NotificationCreate,
     Plan, Subscription, Payment, ClientPublic, PlanCreate, VisitPublic, QRCode, 
     SubscriptionCreate, ClientGroup, Reservation, ReservationPublic, ClientGroupPublic,
-    SubscriptionPublic
+    SubscriptionPublic, PlanToken, PlanTokenCreate, PlanTokenUse, PlanTokenUseCreate,
+    PlanInstance, PlanInstanceCreate, PlanInstancePublic, PlanTokenPublic
 )
 import uuid
 from typing import Optional, List, Dict, Any
@@ -519,6 +522,466 @@ def get_plan_by_id(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     return plan
+
+@router.post("/plans/{plan_id}/tokens", response_model=PlanTokenPublic)
+def create_plan_token(
+    *, session: SessionDep, current_user: GetAdminUser, plan_id: uuid.UUID, token_in: PlanTokenCreate
+) -> Any:
+    """
+    Create a new token for a plan
+    """
+    # Verify plan exists
+    plan = session.exec(select(Plan).where(Plan.id == plan_id)).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Generate a token if not provided
+    token_value = token_in.token_value
+    if not token_value:
+        # Generate a random 8-character alphanumeric token
+        token_value = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        
+        # Make sure it's unique
+        while session.exec(select(PlanToken).where(PlanToken.token_value == token_value)).first():
+            token_value = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    
+    # Create token
+    token_data = {
+        "plan_id": plan_id,
+        "token_value": token_value,
+        "max_uses": token_in.max_uses,
+        "expires_at": token_in.expires_at
+    }
+    
+    token = PlanToken(**token_data)
+    session.add(token)
+    session.commit()
+    session.refresh(token)
+    
+    return token
+
+@router.get("/plans/{plan_id}/tokens", response_model=list[PlanTokenPublic])
+def get_plan_tokens(
+    *, session: SessionDep, current_user: GetAdminUser, plan_id: uuid.UUID
+) -> Any:
+    """
+    Get all tokens for a plan
+    """
+    tokens = session.exec(select(PlanToken).where(PlanToken.plan_id == plan_id)).all()
+    return tokens
+
+@router.post("/tokens/validate", response_model=dict)
+def validate_token(
+    *, session: SessionDep, current_user: GetAdminUser, token_value: str
+) -> Any:
+    """
+    Validate a token without using it
+    """
+    token = session.exec(select(PlanToken).where(
+        PlanToken.token_value == token_value,
+        PlanToken.is_active == True
+    )).first()
+    
+    if not token:
+        return {"valid": False, "message": "Invalid or inactive token"}
+    
+    # Check if token has expired
+    if token.expires_at and token.expires_at < datetime.utcnow():
+        return {"valid": False, "message": "Token has expired"}
+    
+    # Check if token has reached max uses
+    if token.max_uses and token.uses_count >= token.max_uses:
+        return {"valid": False, "message": "Token has reached maximum usage limit"}
+    
+    # Get plan details
+    plan = session.exec(select(Plan).where(Plan.id == token.plan_id)).first()
+    
+    return {
+        "valid": True,
+        "plan": {
+            "id": plan.id,
+            "name": plan.name,
+            "description": plan.description,
+            "entries": plan.entries,
+            "limits": plan.limits
+        }
+    }
+
+@router.post("/tokens/use", response_model=PlanTokenUse)
+def use_token(
+    *, session: SessionDep, current_user: GetAdminUser, token_use: PlanTokenUseCreate
+) -> Any:
+    """
+    Use a token for a client
+    """
+    # Get the token
+    token = session.exec(select(PlanToken).where(PlanToken.id == token_use.token_id)).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+    
+    # Check if token is active
+    if not token.is_active:
+        raise HTTPException(status_code=400, detail="Token is not active")
+    
+    # Check if token has expired
+    if token.expires_at and token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token has expired")
+    
+    # Check if token has reached max uses
+    if token.max_uses and token.uses_count >= token.max_uses:
+        raise HTTPException(status_code=400, detail="Token has reached maximum usage limit")
+    
+    # Check if client exists
+    client = session.exec(select(Client).where(Client.id == token_use.client_id)).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Create token use record
+    token_use_db = PlanTokenUse(
+        token_id=token.id,
+        client_id=client.id
+    )
+    session.add(token_use_db)
+    
+    # Update token usage count
+    token.uses_count += 1
+    
+    # Get plan to check and update limits
+    plan = session.exec(select(Plan).where(Plan.id == token.plan_id)).first()
+    
+    # Update limits if needed (example implementation)
+    if plan.limits:
+        # Example: update user count limit
+        if "users" in plan.limits:
+            plan.limits["users"] = max(0, plan.limits.get("users", 0) - 1)
+        
+        # Example: update time limit
+        if "time" in plan.limits:
+            plan.limits["time"] = max(0, plan.limits.get("time", 0) - 1)
+    
+    session.commit()
+    session.refresh(token_use_db)
+    
+    return token_use_db
+
+# Get all reservations endpoint
+@router.get("/all-reservations", response_model=list[ReservationPublic])
+def get_all_reservations(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100,
+    upcoming_only: bool = False
+) -> Any:
+    """Get all reservations"""
+    statement = select(Reservation)
+    
+    if upcoming_only:
+        current_date = datetime.utcnow()
+        statement = statement.where(Reservation.date >= current_date)
+    
+    statement = statement.offset(skip).limit(limit).order_by(Reservation.date)
+    reservations = session.exec(statement).all()
+    return reservations
+
+@router.post("/plan-instances", response_model=PlanInstancePublic)
+def create_plan_instance(
+    *, session: SessionDep, current_user: GetAdminUser, instance_in: PlanInstanceCreate
+) -> Any:
+    """
+    Create a new plan instance from a plan template
+    """
+    # Verify plan exists
+    plan = session.exec(select(Plan).where(Plan.id == instance_in.plan_id)).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Verify client group exists
+    client_group = session.exec(select(ClientGroup).where(ClientGroup.id == instance_in.client_group_id)).first()
+    if not client_group:
+        raise HTTPException(status_code=404, detail="Client group not found")
+    
+    # Calculate total cost based on plan and addons
+    total_cost = plan.price
+    purchased_addons = instance_in.purchased_addons or {}
+    
+    for addon_name, addon_quantity in purchased_addons.items():
+        if addon_name in plan.addons:
+            addon_price = plan.addons.get(addon_name, 0)
+            total_cost += addon_price * addon_quantity
+    
+    # Set up remaining limits based on plan template
+    remaining_limits = instance_in.remaining_limits or {}
+    if plan.limits and not remaining_limits:
+        remaining_limits = plan.limits.copy()
+    
+    # Set up remaining entries based on plan template
+    remaining_entries = instance_in.remaining_entries
+    if remaining_entries is None and plan.entries is not None:
+        remaining_entries = plan.entries
+    
+    # Create the plan instance
+    plan_instance = PlanInstance(
+        client_group_id=instance_in.client_group_id,
+        plan_id=instance_in.plan_id,
+        start_date=instance_in.start_date,
+        end_date=instance_in.end_date,
+        total_cost=total_cost,
+        purchased_addons=purchased_addons,
+        remaining_entries=remaining_entries,
+        remaining_limits=remaining_limits
+    )
+    
+    session.add(plan_instance)
+    session.commit()
+    session.refresh(plan_instance)
+    
+    return plan_instance
+
+@router.get("/plan-instances", response_model=list[PlanInstancePublic])
+def get_all_plan_instances(
+    session: SessionDep,
+    current_user: GetAdminUser,
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = False,
+    client_group_id: Optional[uuid.UUID] = None,
+    plan_id: Optional[uuid.UUID] = None
+) -> Any:
+    """
+    Get all plan instances with optional filtering
+    """
+    query = select(PlanInstance)
+    
+    if active_only:
+        query = query.where(PlanInstance.is_active == True)
+    
+    if client_group_id:
+        query = query.where(PlanInstance.client_group_id == client_group_id)
+    
+    if plan_id:
+        query = query.where(PlanInstance.plan_id == plan_id)
+    
+    query = query.offset(skip).limit(limit).order_by(desc(PlanInstance.created_at))
+    
+    plan_instances = session.exec(query).all()
+    return plan_instances
+
+@router.get("/plan-instances/{instance_id}", response_model=PlanInstancePublic)
+def get_plan_instance(
+    *, session: SessionDep, current_user: GetAdminUser, instance_id: uuid.UUID
+) -> Any:
+    """
+    Get a specific plan instance by ID
+    """
+    plan_instance = session.exec(select(PlanInstance).where(PlanInstance.id == instance_id)).first()
+    if not plan_instance:
+        raise HTTPException(status_code=404, detail="Plan instance not found")
+    
+    return plan_instance
+
+@router.post("/plan-instances/{instance_id}/payments", response_model=Payment)
+def add_payment_to_plan_instance(
+    *, session: SessionDep, current_user: GetAdminUser, instance_id: uuid.UUID, payment_in: dict
+) -> Any:
+    """
+    Add a payment to a plan instance
+    """
+    plan_instance = session.exec(select(PlanInstance).where(PlanInstance.id == instance_id)).first()
+    if not plan_instance:
+        raise HTTPException(status_code=404, detail="Plan instance not found")
+    
+    # Create the payment
+    payment = Payment(
+        client_group_id=plan_instance.client_group_id,
+        plan_id=plan_instance.plan_id,
+        plan_instance_id=plan_instance.id,
+        amount=payment_in.get("amount"),
+        status=payment_in.get("status", "completed"),
+        payment_method=payment_in.get("payment_method", "manual"),
+        transaction_id=payment_in.get("transaction_id", str(uuid.uuid4())),
+        purchased_addons=payment_in.get("purchased_addons", {})
+    )
+    
+    session.add(payment)
+    
+    # Update the plan instance's paid amount
+    if payment.status == "completed":
+        plan_instance.paid_amount += payment.amount
+    
+    session.commit()
+    session.refresh(payment)
+    
+    return payment
+
+@router.post("/plan-instances/{instance_id}/tokens", response_model=PlanTokenPublic)
+def create_plan_instance_token(
+    *, session: SessionDep, current_user: GetAdminUser, instance_id: uuid.UUID, token_in: PlanTokenCreate
+) -> Any:
+    """
+    Create a new token for a plan instance
+    """
+    # Verify plan instance exists
+    plan_instance = session.exec(select(PlanInstance).where(PlanInstance.id == instance_id)).first()
+    if not plan_instance:
+        raise HTTPException(status_code=404, detail="Plan instance not found")
+    
+    # Generate a token if not provided
+    token_value = token_in.token_value
+    if not token_value:
+        # Generate a random 8-character alphanumeric token
+        token_value = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        
+        # Make sure it's unique
+        while session.exec(select(PlanToken).where(PlanToken.token_value == token_value)).first():
+            token_value = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    
+    # Create token
+    token_data = {
+        "plan_id": plan_instance.plan_id,
+        "plan_instance_id": plan_instance.id,
+        "token_value": token_value,
+        "max_uses": token_in.max_uses,
+        "expires_at": token_in.expires_at
+    }
+    
+    token = PlanToken(**token_data)
+    session.add(token)
+    session.commit()
+    session.refresh(token)
+    
+    return token
+
+@router.get("/plan-instances/{instance_id}/tokens", response_model=list[PlanTokenPublic])
+def get_plan_instance_tokens(
+    *, session: SessionDep, current_user: GetAdminUser, instance_id: uuid.UUID
+) -> Any:
+    """
+    Get all tokens for a plan instance
+    """
+    tokens = session.exec(select(PlanToken).where(PlanToken.plan_instance_id == instance_id)).all()
+    return tokens
+
+# Update the token validation and use endpoints to work with plan instances
+@router.post("/tokens/validate", response_model=dict)
+def validate_token(
+    *, session: SessionDep, current_user: GetAdminUser, token_value: str
+) -> Any:
+    """
+    Validate a token without using it
+    """
+    token = session.exec(select(PlanToken).where(
+        PlanToken.token_value == token_value,
+        PlanToken.is_active == True
+    )).first()
+    
+    if not token:
+        return {"valid": False, "message": "Invalid or inactive token"}
+    
+    # Check if token has expired
+    if token.expires_at and token.expires_at < datetime.utcnow():
+        return {"valid": False, "message": "Token has expired"}
+    
+    # Check if token has reached max uses
+    if token.max_uses and token.uses_count >= token.max_uses:
+        return {"valid": False, "message": "Token has reached maximum usage limit"}
+    
+    # Get plan instance details
+    plan_instance = session.exec(select(PlanInstance).where(PlanInstance.id == token.plan_instance_id)).first()
+    if not plan_instance:
+        return {"valid": False, "message": "Associated plan instance not found"}
+    
+    # Check if plan instance is active
+    if not plan_instance.is_active:
+        return {"valid": False, "message": "Associated plan instance is not active"}
+    
+    # Check remaining entries
+    if plan_instance.remaining_entries is not None and plan_instance.remaining_entries <= 0:
+        return {"valid": False, "message": "No entries remaining on this plan instance"}
+    
+    # Get plan details
+    plan = session.exec(select(Plan).where(Plan.id == plan_instance.plan_id)).first()
+    
+    return {
+        "valid": True,
+        "plan_instance": {
+            "id": plan_instance.id,
+            "plan_id": plan_instance.plan_id,
+            "plan_name": plan.name,
+            "remaining_entries": plan_instance.remaining_entries,
+            "remaining_limits": plan_instance.remaining_limits,
+            "is_fully_paid": plan_instance.is_fully_paid
+        }
+    }
+
+@router.post("/tokens/use", response_model=PlanTokenUse)
+def use_token(
+    *, session: SessionDep, current_user: GetAdminUser, token_use: PlanTokenUseCreate
+) -> Any:
+    """
+    Use a token for a client
+    """
+    # Get the token
+    token = session.exec(select(PlanToken).where(PlanToken.id == token_use.token_id)).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+    
+    # Check if token is active
+    if not token.is_active:
+        raise HTTPException(status_code=400, detail="Token is not active")
+    
+    # Check if token has expired
+    if token.expires_at and token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token has expired")
+    
+    # Check if token has reached max uses
+    if token.max_uses and token.uses_count >= token.max_uses:
+        raise HTTPException(status_code=400, detail="Token has reached maximum usage limit")
+    
+    # Check if client exists
+    client = session.exec(select(Client).where(Client.id == token_use.client_id)).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Get the plan instance and check its status
+    plan_instance = session.exec(select(PlanInstance).where(PlanInstance.id == token.plan_instance_id)).first()
+    if not plan_instance:
+        raise HTTPException(status_code=404, detail="Plan instance not found")
+    
+    # Check if plan instance is active
+    if not plan_instance.is_active:
+        raise HTTPException(status_code=400, detail="Plan instance is not active")
+    
+    # Check remaining entries
+    if plan_instance.remaining_entries is not None:
+        if plan_instance.remaining_entries <= 0:
+            raise HTTPException(status_code=400, detail="No entries remaining on this plan instance")
+        plan_instance.remaining_entries -= 1
+    
+    # Create token use record
+    token_use_db = PlanTokenUse(
+        token_id=token.id,
+        client_id=client.id
+    )
+    session.add(token_use_db)
+    
+    # Update token usage count
+    token.uses_count += 1
+    
+    # Update limits if needed
+    if plan_instance.remaining_limits:
+        # Example: update user count limit
+        if "users" in plan_instance.remaining_limits:
+            plan_instance.remaining_limits["users"] = max(0, plan_instance.remaining_limits.get("users", 0) - 1)
+        
+        # Example: update time limit
+        if "time" in plan_instance.remaining_limits:
+            plan_instance.remaining_limits["time"] = max(0, plan_instance.remaining_limits.get("time", 0) - 1)
+    
+    session.commit()
+    session.refresh(token_use_db)
+    
+    return token_use_db
 
 # Get all reservations endpoint
 @router.get("/all-reservations", response_model=list[ReservationPublic])

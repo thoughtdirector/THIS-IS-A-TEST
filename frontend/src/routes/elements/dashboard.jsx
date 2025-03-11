@@ -15,7 +15,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const Dashboard = () => {
+const AdminDashboard = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
   
@@ -554,4 +554,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default AdminDashboard;

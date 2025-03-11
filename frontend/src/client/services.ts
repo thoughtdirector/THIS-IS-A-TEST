@@ -343,9 +343,6 @@ export class UsersService {
     })
   }
 
-
-  
-
   /**
    * Update User
    * Update a user.
@@ -556,7 +553,6 @@ export class ItemsService {
     })
   }
 }
-
 
 export class ChatService  {
 
@@ -847,6 +843,144 @@ export class ClientService {
       useOrg: true,
     });
   }
+
+  public static getAvailablePlans(data) {
+    const { skip = 0, limit = 100, active_only = true } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/clients/available-plans",
+      query: {
+        skip,
+        limit,
+        active_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getClientGroups(data = {}) {
+    const { skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/clients/client-groups",
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static createPlanInstance(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/clients/plan-instances",
+      body: data,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getClientPlanInstances(data = {}) {
+    const { skip = 0, limit = 100, active_only = false } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/clients/plan-instances",
+      query: {
+        skip,
+        limit,
+        active_only,
+      },
+      errors: {
+        401: `Unauthorized`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getPlanInstance(data) {
+    const { instanceId } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/clients/plan-instances/${instanceId}`,
+      errors: {
+        401: `Unauthorized`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getPlanInstanceVisits(data) {
+    const { instanceId, skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/clients/plan-instances/${instanceId}/visits`,
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getPlanInstancePayments(data) {
+    const { instanceId, skip = 0, limit = 100 } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/clients/plan-instances/${instanceId}/payments`,
+      query: {
+        skip,
+        limit,
+      },
+      errors: {
+        401: `Unauthorized`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static makePayment(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/clients/payments",
+      body: data,
+      errors: {
+        401: `Unauthorized`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
 }
 
 export class DashboardService {
@@ -1068,12 +1202,12 @@ export class DashboardService {
   }
 
   public static updatePlan(data) {
-    const { id, ...updateData } = data;
+    const { planId, requestBody } = data;
     
     return __request(OpenAPI, {
       method: "PUT",
-      url: `/api/v1/admin/plans/${id}`,
-      body: updateData,
+      url: `/api/v1/admin/plans/${planId}`,
+      body: requestBody,
       errors: {
         401: `Unauthorized`,
         403: `Forbidden`,
@@ -1218,5 +1352,67 @@ export class DashboardService {
     });
   }
 
+  public static createPlanToken(data) {
+    const { plan_id, ...rest } = data;
+    
+    return __request(OpenAPI, {
+      method: "POST",
+      url: `/api/v1/admin/plans/${plan_id}/tokens`,
+      body: rest,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
 
+  public static getPlanTokens(data) {
+    const { plan_id } = data;
+    
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/admin/plans/${plan_id}/tokens`,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static validateToken(data) {
+    const { token_value } = data;
+    
+    return __request(OpenAPI, {
+      method: "POST",
+      url: `/api/v1/admin/tokens/validate`,
+      body: { token_value },
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static useToken(data) {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: `/api/v1/admin/tokens/use`,
+      body: data,
+      errors: {
+        401: `Unauthorized`,
+        403: `Forbidden`,
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
 }

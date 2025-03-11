@@ -1,401 +1,408 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { DashboardService } from '../../client/services';
-
-// Import ShadCN UI components
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { DashboardService } from '@/client/services';
+import { ArrowLeft, Plus, Trash } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 
 const PlanEdit = () => {
-  const { planId } = useParams();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { planId } = useParams();
   
-  // State for form
-  const [formData, setFormData] = useState({
+  const [plan, setPlan] = useState({
     name: '',
     description: '',
     price: '',
     duration_days: '',
     duration_hours: '',
-    is_class_plan: false,
-    max_classes: '',
+    entries: '',
+    is_active: true,
     addons: [],
+    limits: {
+      users: '',
+      time: ''
+    }
   });
   
-  // State for new addon
   const [newAddon, setNewAddon] = useState({
     name: '',
     price: '',
   });
-  
-  // Fetch plan details
-  const { 
-    data: plan, 
-    isLoading: planLoading,
-    isError: planError,
-    error: planErrorData
-  } = useQuery({
+
+  // Fetch plan data
+  const { data: planData, isLoading } = useQuery({
     queryKey: ['plan', planId],
-    queryFn: () => DashboardService.getPlan({ id: planId }),
+    queryFn: () => DashboardService.getPlan({ planId }),
   });
-  
-  // Update plan mutation
-  const updatePlanMutation = useMutation({
-    mutationFn: (data) => DashboardService.updatePlan(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['plan', planId]);
-      navigate({ to: `/dashboard/plans/${planId}` });
-    },
-  });
-  
-  // Initialize form data when plan data is loaded
+
+  // Update state when plan data is loaded
   useEffect(() => {
-    if (plan) {
-      // Convert addons object to array
-      const addonsArray = Object.entries(plan.addons || {}).map(([name, price]) => ({
-        name,
-        price: price.toString(),
-      }));
-      
-      setFormData({
-        name: plan.name || '',
-        description: plan.description || '',
-        price: plan.price ? plan.price.toString() : '',
-        duration_days: plan.duration_days ? plan.duration_days.toString() : '',
-        duration_hours: plan.duration_hours ? plan.duration_hours.toString() : '',
-        is_class_plan: plan.is_class_plan || false,
-        max_classes: plan.max_classes ? plan.max_classes.toString() : '',
-        addons: addonsArray,
+    if (planData) {
+      setPlan({
+        name: planData.name,
+        description: planData.description,
+        price: planData.price,
+        duration_days: planData.duration_days || '',
+        duration_hours: planData.duration_hours || '',
+        entries: planData.entries || '',
+        is_active: planData.is_active,
+        addons: planData.addons && Object.keys(planData.addons).length > 0 
+          ? Object.entries(planData.addons).map(([name, price]) => ({ name, price })) 
+          : [],
+        limits: planData.limits || { users: '', time: '' }
       });
     }
-  }, [plan]);
-  
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+  }, [planData]);
+
+  // Update plan mutation
+  const updatePlanMutation = useMutation({
+    mutationFn: DashboardService.updatePlan,
+    onSuccess: () => {
+      toast.success('Plan updated successfully');
+      queryClient.invalidateQueries(['plans']);
+      queryClient.invalidateQueries(['plan', planId]);
+      navigate({ to: '/dashboard/plans' });
+    },
+    onError: (error) => {
+      toast.error('Failed to update plan: ' + error.message);
+    }
+  });
+
+  const handlePlanChange = (e) => {
+    const { name, value } = e.target;
+    setPlan(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleActiveToggle = (checked) => {
+    setPlan(prev => ({ ...prev, is_active: checked }));
+  };
+
+  const handleLimitsChange = (e) => {
+    const { name, value } = e.target;
+    setPlan(prev => ({
+      ...prev,
+      limits: {
+        ...prev.limits,
+        [name]: value
+      }
+    }));
+  };
+
+  const handleUpdatePlan = (e) => {
+    e.preventDefault();
+    
+    // Convert addons array to object
+    const addonsObject = {};
+    plan.addons.forEach(addon => {
+      addonsObject[addon.name] = parseFloat(addon.price);
+    });
+    
+    // Prepare data for API
+    const updateData = {
+      name: plan.name,
+      description: plan.description,
+      price: parseFloat(plan.price),
+      is_active: plan.is_active,
+      addons: addonsObject,
+      limits: plan.limits
+    };
+    
+    // Only add these fields if they have values
+    if (plan.duration_days) updateData.duration_days = parseInt(plan.duration_days);
+    if (plan.duration_hours) updateData.duration_hours = parseInt(plan.duration_hours);
+    if (plan.entries) updateData.entries = parseInt(plan.entries);
+    
+    // Call API
+    updatePlanMutation.mutate({
+      planId,
+      requestBody: updateData
     });
   };
-  
+
   const handleAddAddon = () => {
     if (newAddon.name && newAddon.price) {
-      setFormData({
-        ...formData,
-        addons: [...formData.addons, { ...newAddon }]
-      });
+      setPlan(prev => ({
+        ...prev,
+        addons: [...prev.addons, { ...newAddon }]
+      }));
       setNewAddon({ name: '', price: '' });
     }
   };
-  
+
   const handleAddonChange = (e) => {
     const { name, value } = e.target;
-    setNewAddon({
-      ...newAddon,
-      [name]: value,
-    });
+    setNewAddon(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleRemoveAddon = (index) => {
-    setFormData({
-      ...formData,
-      addons: formData.addons.filter((_, i) => i !== index)
-    });
+    setPlan(prev => ({
+      ...prev,
+      addons: prev.addons.filter((_, i) => i !== index)
+    }));
   };
-  
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Convert to correct data types
-    const updateData = {
-      id: planId,
-      name: formData.name,
-      description: formData.description,
-      price: parseFloat(formData.price),
-      duration_days: formData.duration_days ? parseInt(formData.duration_days) : null,
-      duration_hours: formData.duration_hours ? parseInt(formData.duration_hours) : null,
-      is_class_plan: formData.is_class_plan,
-      max_classes: formData.max_classes ? parseInt(formData.max_classes) : null,
-      // Convert addons array to an object with addon names as keys and prices as values
-      addons: formData.addons.reduce((acc, addon) => {
-        acc[addon.name] = parseFloat(addon.price);
-        return acc;
-      }, {}),
-    };
-    
-    updatePlanMutation.mutate(updateData);
-  };
-  
-  if (planLoading) {
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto py-6 max-w-5xl">
-        <div className="flex items-center mb-6">
-          <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to={`/dashboard/plans/${planId}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-bold">Loading Plan...</h1>
-        </div>
-        <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (planError || !plan) {
-    return (
-      <div className="container mx-auto py-6 max-w-5xl">
+      <div className="container mx-auto py-6">
         <div className="flex items-center mb-6">
           <Button variant="outline" size="icon" asChild className="mr-4">
             <Link to="/dashboard/plans">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Edit Plan</h1>
+          <h1 className="text-2xl font-bold">Loading plan data...</h1>
         </div>
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {planErrorData?.message || "Failed to load plan details"}
-            <Button 
-              variant="outline" 
-              className="mt-2"
-              onClick={() => navigate({ to: '/dashboard/plans' })}
-            >
-              Return to Plans
-            </Button>
-          </AlertDescription>
-        </Alert>
       </div>
     );
   }
-  
+
   return (
-    <div className="container mx-auto py-6 max-w-5xl">
+    <div className="container mx-auto py-6">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to={`/dashboard/plans/${planId}`}>
+          <Link to="/dashboard/plans">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Edit Plan: {plan.name}</h1>
+        <h1 className="text-2xl font-bold">Edit Plan</h1>
       </div>
-      
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Plan Name
-                </Label>
+
+      <form onSubmit={handleUpdatePlan}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>
+                Edit the plan's basic details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Plan Name</Label>
                 <Input
                   id="name"
                   name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="col-span-3"
+                  value={plan.name}
+                  onChange={handlePlanChange}
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Description
-                </Label>
-                <Input
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
                   id="description"
                   name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="col-span-3"
+                  value={plan.description}
+                  onChange={handlePlanChange}
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="price" className="text-right">
-                  Price
-                </Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="price">Price ($)</Label>
                 <Input
                   id="price"
                   name="price"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="col-span-3"
+                  value={plan.price}
+                  onChange={handlePlanChange}
                   required
                 />
               </div>
               
-              <Separator className="my-2" />
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="duration_days" className="text-right">
-                  Duration (Days)
-                </Label>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="is_active" 
+                  checked={plan.is_active}
+                  onCheckedChange={handleActiveToggle}
+                />
+                <Label htmlFor="is_active">Active</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Plan Parameters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Plan Parameters</CardTitle>
+              <CardDescription>
+                Set the duration and entry limits for this plan
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration_days">Duration (Days)</Label>
                 <Input
                   id="duration_days"
                   name="duration_days"
                   type="number"
-                  min="1"
-                  value={formData.duration_days}
-                  onChange={handleChange}
-                  className="col-span-3"
-                  placeholder="e.g., 30 for a monthly plan"
+                  min="0"
+                  value={plan.duration_days}
+                  onChange={handlePlanChange}
+                  placeholder="Leave empty if not applicable"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="duration_hours" className="text-right">
-                  Hours per Visit
-                </Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="duration_hours">Hours per Visit</Label>
                 <Input
                   id="duration_hours"
                   name="duration_hours"
                   type="number"
-                  min="1"
-                  value={formData.duration_hours}
-                  onChange={handleChange}
-                  className="col-span-3"
-                  placeholder="Leave empty for unlimited hours"
+                  min="0"
+                  value={plan.duration_hours}
+                  onChange={handlePlanChange}
+                  placeholder="Leave empty if not applicable"
                 />
               </div>
               
-              <Separator className="my-2" />
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="is_class_plan" className="text-right">
-                  Class-based Plan
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch
-                    id="is_class_plan"
-                    name="is_class_plan"
-                    checked={formData.is_class_plan}
-                    onCheckedChange={(checked) => 
-                      setFormData({...formData, is_class_plan: checked})
-                    }
-                  />
-                  <Label htmlFor="is_class_plan">
-                    Enable for class-based subscriptions
-                  </Label>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="entries">Number of Entries</Label>
+                <Input
+                  id="entries"
+                  name="entries"
+                  type="number"
+                  min="0"
+                  value={plan.entries}
+                  onChange={handlePlanChange}
+                  placeholder="Leave empty if unlimited"
+                />
               </div>
               
-              {formData.is_class_plan && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="max_classes" className="text-right">
-                    Max Classes
-                  </Label>
-                  <Input
-                    id="max_classes"
-                    name="max_classes"
-                    type="number"
-                    min="1"
-                    value={formData.max_classes}
-                    onChange={handleChange}
-                    className="col-span-3"
-                    required={formData.is_class_plan}
-                  />
-                </div>
-              )}
+              <Separator className="my-4" />
               
-              <Separator className="my-2" />
-              
-              <div className="col-span-4">
-                <Label className="mb-2 block">Add-ons</Label>
-                <div className="mb-4">
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    <Input
-                      placeholder="Add-on name"
-                      name="name"
-                      value={newAddon.name}
-                      onChange={handleAddonChange}
-                      className="col-span-1"
-                    />
-                    <Input
-                      placeholder="Price per unit"
-                      name="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newAddon.price}
-                      onChange={handleAddonChange}
-                      className="col-span-1"
-                    />
-                    <Button 
-                      type="button" 
-                      onClick={handleAddAddon}
-                      disabled={!newAddon.name || !newAddon.price}
-                      className="col-span-1"
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-                
-                {formData.addons.length > 0 && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Add-on Name</TableHead>
-                        <TableHead>Price per Unit</TableHead>
-                        <TableHead className="w-[80px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {formData.addons.map((addon, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{addon.name}</TableCell>
-                          <TableCell>${parseFloat(addon.price).toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveAddon(index)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+              <div className="space-y-2">
+                <Label htmlFor="users">Max Users</Label>
+                <Input
+                  id="users"
+                  name="users"
+                  type="number"
+                  min="0"
+                  value={plan.limits.users}
+                  onChange={handleLimitsChange}
+                  placeholder="Leave empty if unlimited"
+                />
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="time">Time Limit (hours)</Label>
+                <Input
+                  id="time"
+                  name="time"
+                  type="number"
+                  min="0"
+                  value={plan.limits.time}
+                  onChange={handleLimitsChange}
+                  placeholder="Leave empty if unlimited"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Add-ons Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Add-ons</CardTitle>
+            <CardDescription>
+              Additional services or features that can be added to this plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-4 mb-4">
+              <div className="flex-1">
+                <Label htmlFor="addon-name">Add-on Name</Label>
+                <Input
+                  id="addon-name"
+                  name="name"
+                  value={newAddon.name}
+                  onChange={handleAddonChange}
+                />
+              </div>
+              <div className="w-32">
+                <Label htmlFor="addon-price">Price ($)</Label>
+                <Input
+                  id="addon-price"
+                  name="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newAddon.price}
+                  onChange={handleAddonChange}
+                />
+              </div>
+              <Button type="button" onClick={handleAddAddon} className="flex gap-1">
+                <Plus className="h-4 w-4" /> Add
+              </Button>
             </div>
             
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate({ to: `/dashboard/plans/${planId}` })}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={updatePlanMutation.isPending}
-                className="flex items-center"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updatePlanMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            {plan.addons.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Add-on</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {plan.addons.map((addon, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{addon.name}</TableCell>
+                      <TableCell>${parseFloat(addon.price).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveAddon(index)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Alert>
+                <AlertDescription>
+                  No add-ons added yet. Add some using the form above.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-4">
+            <Button 
+              variant="outline" 
+              type="button"
+              onClick={() => navigate({ to: '/dashboard/plans' })}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={updatePlanMutation.isPending}
+            >
+              {updatePlanMutation.isPending ? 'Updating...' : 'Update Plan'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 };

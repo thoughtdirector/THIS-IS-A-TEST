@@ -18,12 +18,14 @@ import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as ActivateOrganizationImport } from './routes/_activateOrganization'
 import { Route as IndexImport } from './routes/index'
+import { Route as ElementsUserDashboardImport } from './routes/elements/userDashboard'
 import { Route as ElementsTaskListImport } from './routes/elements/taskList'
 import { Route as ElementsSettingsImport } from './routes/elements/settings'
 import { Route as ElementsProjectListImport } from './routes/elements/projectList'
 import { Route as ElementsProjectImport } from './routes/elements/project'
 import { Route as ElementsOrganizationListImport } from './routes/elements/organizationList'
 import { Route as ElementsItemsImport } from './routes/elements/items'
+import { Route as ElementsDashboardRouterImport } from './routes/elements/dashboardRouter'
 import { Route as ElementsDashboardImport } from './routes/elements/dashboard'
 import { Route as ElementsChatbotImport } from './routes/elements/chatbot'
 import { Route as ElementsAdminImport } from './routes/elements/admin'
@@ -65,6 +67,11 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ElementsUserDashboardRoute = ElementsUserDashboardImport.update({
+  path: '/elements/userDashboard',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ElementsTaskListRoute = ElementsTaskListImport.update({
   path: '/elements/taskList',
   getParentRoute: () => rootRoute,
@@ -92,6 +99,11 @@ const ElementsOrganizationListRoute = ElementsOrganizationListImport.update({
 
 const ElementsItemsRoute = ElementsItemsImport.update({
   path: '/elements/items',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ElementsDashboardRouterRoute = ElementsDashboardRouterImport.update({
+  path: '/elements/dashboardRouter',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -154,6 +166,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ElementsDashboardImport
       parentRoute: typeof rootRoute
     }
+    '/elements/dashboardRouter': {
+      preLoaderRoute: typeof ElementsDashboardRouterImport
+      parentRoute: typeof rootRoute
+    }
     '/elements/items': {
       preLoaderRoute: typeof ElementsItemsImport
       parentRoute: typeof rootRoute
@@ -178,6 +194,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ElementsTaskListImport
       parentRoute: typeof rootRoute
     }
+    '/elements/userDashboard': {
+      preLoaderRoute: typeof ElementsUserDashboardImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -194,12 +214,14 @@ export const routeTree = rootRoute.addChildren([
   ElementsAdminRoute,
   ElementsChatbotRoute,
   ElementsDashboardRoute,
+  ElementsDashboardRouterRoute,
   ElementsItemsRoute,
   ElementsOrganizationListRoute,
   ElementsProjectRoute,
   ElementsProjectListRoute,
   ElementsSettingsRoute,
   ElementsTaskListRoute,
+  ElementsUserDashboardRoute,
 ])
 
 /* prettier-ignore-end */

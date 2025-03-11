@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Edit, Trash2, Users, CreditCard, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Users, CreditCard, Clock, Calendar, Copy, Plus, RefreshCw, Ticket } from 'lucide-react';
 import { DashboardService } from '../../client/services';
 
 // Import ShadCN UI components
@@ -28,6 +28,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+// import { toast } from '@/components/ui/use-toast';
+import { format } from 'date-fns';
 
 const PlanDetail = () => {
   const { planId } = useParams();
@@ -35,6 +40,10 @@ const PlanDetail = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [newToken, setNewToken] = useState({
+    max_uses: '',
+    expires_at: ''
+  });
   
   // Fetch plan details
   const { 
@@ -58,6 +67,17 @@ const PlanDetail = () => {
     queryFn: () => DashboardService.getPlanSubscriptions({ plan_id: planId }),
   });
   
+  // Fetch tokens for this plan
+  const { 
+    data: tokens, 
+    isLoading: tokensLoading,
+    isError: tokensError,
+    refetch: refetchTokens 
+  } = useQuery({
+    queryKey: ['planTokens', planId],
+    queryFn: () => DashboardService.getPlanTokens({ plan_id: planId }),
+  });
+  
   // Update plan status mutation
   const updatePlanStatusMutation = useMutation({
     mutationFn: (data) => DashboardService.updatePlan(data),
@@ -71,6 +91,18 @@ const PlanDetail = () => {
     mutationFn: () => DashboardService.deletePlan({ id: planId }),
     onSuccess: () => {
       navigate({ to: '/dashboard/plans' });
+    },
+  });
+  
+  // Create token mutation
+  const createTokenMutation = useMutation({
+    mutationFn: (data) => DashboardService.createPlanToken({ plan_id: planId, ...data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['planTokens', planId]);
+      setNewToken({
+        max_uses: '',
+        expires_at: ''
+      });
     },
   });
   
@@ -105,6 +137,26 @@ const PlanDetail = () => {
       day: 'numeric' 
     });
   };
+  
+  // Handle token creation
+  const handleCreateToken = (e) => {
+    e.preventDefault();
+    const tokenData = {
+      max_uses: newToken.max_uses ? parseInt(newToken.max_uses) : null,
+      expires_at: newToken.expires_at ? new Date(newToken.expires_at).toISOString() : null
+    };
+    
+    createTokenMutation.mutate(tokenData);
+  };
+
+  // Copy token to clipboard
+  // const copyToClipboard = (text) => {
+  //   navigator.clipboard.writeText(text);
+  //   toast({
+  //     description: "Token copied to clipboard",
+  //     duration: 3000,
+  //   });
+  // };
   
   if (planLoading) {
     return (
@@ -213,42 +265,217 @@ const PlanDetail = () => {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center">
-                  <Users className="h-8 w-8 text-purple-500 mb-2" />
-                  <p className="text-sm text-gray-500">Type</p>
+                  <Ticket className="h-8 w-8 text-purple-500 mb-2" />
+                  <p className="text-sm text-gray-500">Entries</p>
                   <p className="text-2xl font-bold">
-                    {plan.is_class_plan ? `Class Plan (${plan.max_classes} classes)` : 'Time-based Plan'}
+                    {plan.entries ? `${plan.entries} entries` : 'Unlimited'}
                   </p>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          {/* Add the addons section */}
-          {plan.addons && Object.keys(plan.addons).length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Available Add-ons</h3>
-              <Card>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Add-on Name</TableHead>
-                        <TableHead>Price per Unit</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Object.entries(plan.addons).map(([name, price]) => (
-                        <TableRow key={name}>
-                          <TableCell>{name}</TableCell>
-                          <TableCell>{formatCurrency(price)}</TableCell>
+          <Tabs defaultValue="addons" className="mb-6">
+            <TabsList className="mb-4">
+              <TabsTrigger value="addons">Add-ons</TabsTrigger>
+              <TabsTrigger value="limits">Limits</TabsTrigger>
+              <TabsTrigger value="tokens">Access Tokens</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="addons">
+              {plan.addons && Object.keys(plan.addons).length > 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Add-on Name</TableHead>
+                          <TableHead>Price per Unit</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(plan.addons).map(([name, price]) => (
+                          <TableRow key={name}>
+                            <TableCell>{name}</TableCell>
+                            <TableCell>{formatCurrency(price)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-6 text-center text-gray-500">
+                    No add-ons available for this plan
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="limits">
+              {plan.limits && Object.keys(plan.limits).length > 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Limit Type</TableHead>
+                          <TableHead>Value</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(plan.limits).map(([key, value]) => (
+                          <TableRow key={key}>
+                            <TableCell className="capitalize">{key}</TableCell>
+                            <TableCell>{value}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-6 text-center text-gray-500">
+                    No limits defined for this plan
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="tokens">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Create Access Token</CardTitle>
+                    <CardDescription>
+                      Generate a token that clients can use to access this plan
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleCreateToken} className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="max_uses">Maximum Uses</Label>
+                        <Input 
+                          id="max_uses"
+                          type="number"
+                          min="1"
+                          value={newToken.max_uses}
+                          onChange={(e) => setNewToken({...newToken, max_uses: e.target.value})}
+                          placeholder="Leave blank for unlimited"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="expires_at">Expiration Date</Label>
+                        <Input 
+                          id="expires_at"
+                          type="date"
+                          value={newToken.expires_at}
+                          onChange={(e) => setNewToken({...newToken, expires_at: e.target.value})}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          disabled={createTokenMutation.isPending}
+                        >
+                          {createTokenMutation.isPending ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Generate Token
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Access Tokens</CardTitle>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => refetchTokens()}
+                        disabled={tokensLoading}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-1 ${tokensLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {tokensLoading ? (
+                      <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : tokens && tokens.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Token</TableHead>
+                            <TableHead>Uses</TableHead>
+                            <TableHead>Expires</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {tokens.map(token => (
+                            <TableRow key={token.id}>
+                              <TableCell className="font-mono">{token.token_value}</TableCell>
+                              <TableCell>
+                                {token.uses_count}{token.max_uses ? `/${token.max_uses}` : ''}
+                              </TableCell>
+                              <TableCell>
+                                {token.expires_at ? formatDate(token.expires_at) : 'Never'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={token.is_active ? "default" : "secondary"}>
+                                  {token.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        size="icon" 
+                                        variant="ghost" 
+                                        onClick={() => copyToClipboard(token.token_value)}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Copy to clipboard</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-6 text-gray-500">
+                        No tokens have been created for this plan
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
           
           <div className="flex justify-between">
             <div className="space-x-2">

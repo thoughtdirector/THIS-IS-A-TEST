@@ -4,8 +4,8 @@ import { z } from "zod"
 // Import existing components
 import useAuth, { isLoggedIn } from "./hooks/useAuth"
 import Admin from './routes/elements/admin'
-import Layout from './routes/_layout'
-import Dashboard from './routes/elements/dashboard'
+import DashboardLayout from './components/Layout/DashboardLayout'
+import DashboardRouter from './routes/elements/dashboardRouter'
 import Index from './routes/index'
 import Login from './routes/login'
 import Signup from './routes/signup'
@@ -27,6 +27,7 @@ import ClientRegister from './components/Dashboard/ClientRegister'
 import Plans from './components/Dashboard/Plans'
 import PlanDetail from './components/Dashboard/PlanDetail'
 import PlanCreate from './components/Dashboard/PlanCreate'
+import PlanEdit from './components/Dashboard/PlanEdit'
 import Reservations from './components/Dashboard/Reservations'
 import ReservationCreate from './components/Dashboard/ReservationCreate'
 import Reports from './components/Dashboard/Reports'
@@ -36,7 +37,10 @@ import PaymentCreate from './components/Dashboard/PaymentCreate'
 import Notifications from './components/Dashboard/Notifications'
 import NotificationCreate from './components/Dashboard/NotificationCreate'
 
-
+// Import client components
+import ClientPlans from './components/Client/Plans'
+import PlanPurchase from './components/Client/PlanPurchase'
+import PlanInstanceDetail from './components/Client/PlanInstanceDetail'
 
 // Root route
 
@@ -55,16 +59,16 @@ const loginRoute = createRoute({
   component: Login,
   beforeLoad: async () => {
     if (isLoggedIn()) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: '/dashboard' })
     }
   },
 })
 
-// Layout route
+// Layout route - updated to use our new DashboardLayout
 const layoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard',
-  component: Layout,
+  component: DashboardLayout,
   beforeLoad: async () => {
     if (!isLoggedIn()) {
       throw redirect({ to: '/login' })
@@ -103,7 +107,7 @@ const projectRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/',
-  component: Dashboard,
+  component: DashboardRouter,
 })
 
 const chatListRoute = createRoute({
@@ -198,6 +202,12 @@ const planCreateRoute = createRoute({
   component: PlanCreate,
 })
 
+const planEditRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/plans/$planId/edit',
+  component: PlanEdit,
+})
+
 // Reservation routes
 const reservationsRoute = createRoute({
   getParentRoute: () => layoutRoute,
@@ -245,6 +255,24 @@ const reportsRoute = createRoute({
   component: Reports,
 })
 
+// Client routes
+const clientPlansRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/plans',
+  component: ClientPlans,
+})
+
+const planPurchaseRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/plans/$planId/purchase',
+  component: PlanPurchase,
+})
+
+const planInstanceDetailRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/plan-instances/$instanceId',
+  component: PlanInstanceDetail,
+})
 
 // Create the route tree
 const routeTree = rootRoute.addChildren([
@@ -258,6 +286,7 @@ const routeTree = rootRoute.addChildren([
       plansRoute,
       planDetailRoute,
       planCreateRoute,
+      planEditRoute,
       reservationsRoute,
       reservationCreateRoute,
       visitCheckInRoute,
@@ -265,7 +294,9 @@ const routeTree = rootRoute.addChildren([
       paymentCreateRoute,
       notificationsRoute,
       reportsRoute,
-      
+      clientPlansRoute,
+      planPurchaseRoute,
+      planInstanceDetailRoute,
     ]),
     settingsRoute,
 

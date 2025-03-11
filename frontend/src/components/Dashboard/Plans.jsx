@@ -264,10 +264,10 @@ const Plans = () => {
                     </div>
                   )}
                   
-                  {plan.is_class_plan && (
+                  {plan.entries && (
                     <div className="flex items-center text-sm">
                       <CreditCard className="mr-2 h-4 w-4 text-gray-500" />
-                      <span>{plan.max_classes} classes included</span>
+                      <span>{plan.entries} entries included</span>
                     </div>
                   )}
                 </div>

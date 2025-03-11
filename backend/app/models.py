@@ -90,6 +90,7 @@ class UpdatePassword(SQLModel):
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
+    admin_user: Optional["AdminUser"] 
 
 
 class UsersPublic(SQLModel):
@@ -215,10 +216,12 @@ class ClientGroup(SQLModel, table=True):
     
     # Relationship: the subscription that applies to the whole group
     subscriptions: List["Subscription"] = Relationship(back_populates="client_group")
+    plan_instances: List["PlanInstance"] = Relationship(back_populates="client_group")
     reservations: List["Reservation"] = Relationship(back_populates="client_group")
     # Relationship: the user(s) (e.g. parent accounts) that can administer the group
     admins: List[Client] = Relationship(
-        back_populates="group_admin"
+        back_populates="group_admin",
+      
     )
 
 
@@ -229,10 +232,10 @@ class PlanUpdate(SQLModel):
     price: Optional[float] = None
     duration_hours: Optional[int] = None
     duration_days: Optional[int] = None
-    is_class_plan: Optional[bool] = None
-    max_classes: Optional[int] = None
+    entries: Optional[int] = None
     is_active: Optional[bool] = None
     addons: Optional[Dict[str, Any]] = None
+    limits: Optional[Dict[str, Any]] = None
 
 class PlanCreate(SQLModel):
     name: str = Field(max_length=255)
@@ -240,9 +243,9 @@ class PlanCreate(SQLModel):
     price: float
     duration_hours: Optional[int] = None  # For hourly plans
     duration_days: Optional[int] = None   # For subscription length
-    is_class_plan: bool = False
-    max_classes: Optional[int] = None
+    entries: Optional[int] = None         # Number of entries/uses allowed (replaces max_classes)
     addons: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure describing available add-ons with their pricing")
+    limits: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure defining limits (users, time, etc.)")
 
 class Plan(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -251,14 +254,78 @@ class Plan(SQLModel, table=True):
     price: float
     duration_hours: Optional[int] = None  # For hourly plans
     duration_days: Optional[int] = None   # For subscription length
-    is_class_plan: bool = False
-    max_classes: Optional[int] = None
+    entries: Optional[int] = None         # Number of entries/uses allowed (replaces max_classes)
     is_active: bool = True
-    addons: Dict = Field(default_factory=list, 
+    addons: Dict = Field(default_factory=dict, 
                          sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
+    limits: Dict = Field(default_factory=dict,
+                         sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)),
+                         description="Limits like max users, time, etc.")
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
     payments: List["Payment"] = Relationship(back_populates="plan")
+    tokens: List["PlanToken"] = Relationship(back_populates="plan")
+    instances: List["PlanInstance"] = Relationship(back_populates="plan")
+
+class PlanInstanceCreate(SQLModel):
+    client_group_id: uuid.UUID
+    plan_id: uuid.UUID
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    purchased_addons: Optional[Dict[str, Any]] = None
+    remaining_entries: Optional[int] = None
+    remaining_limits: Optional[Dict[str, Any]] = None
     
+class PlanInstancePublic(SQLModel):
+    id: uuid.UUID
+    client_group_id: uuid.UUID
+    plan_id: uuid.UUID
+    start_date: datetime
+    end_date: Optional[datetime]
+    total_cost: float
+    paid_amount: float
+    is_active: bool
+    is_fully_paid: bool
+    remaining_entries: Optional[int]
+    remaining_limits: Optional[Dict[str, Any]]
+    purchased_addons: Optional[Dict[str, Any]]
+    created_at: datetime
+    
+class PlanInstance(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    client_group_id: uuid.UUID = Field(foreign_key="clientgroup.id")
+    plan_id: uuid.UUID = Field(foreign_key="plan.id")
+    
+    # Timing
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Status
+    is_active: bool = Field(default=True)
+    
+    # Payment tracking
+    total_cost: float
+    paid_amount: float = Field(default=0.0)
+    
+    # Usage tracking
+    remaining_entries: Optional[int] = None
+    remaining_limits: Dict = Field(default_factory=dict, 
+                                  sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
+    
+    # Addons
+    purchased_addons: Dict = Field(default_factory=dict, 
+                                  sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
+    
+    # Relationships
+    client_group: "ClientGroup" = Relationship(back_populates="plan_instances")
+    plan: "Plan" = Relationship(back_populates="instances")
+    payments: List["Payment"] = Relationship(back_populates="plan_instance")
+    visits: List["Visit"] = Relationship(back_populates="plan_instance")
+    tokens: List["PlanToken"] = Relationship(back_populates="plan_instance")
+    
+    @property
+    def is_fully_paid(self) -> bool:
+        return self.paid_amount >= self.total_cost
 
 class SubscriptionCreate(SQLModel):
     # Instead of a single client, a subscription is now linked to a client group.
@@ -379,12 +446,13 @@ class Visit(SQLModel, table=True):
     checked_out_by: Optional[uuid.UUID] = Field(foreign_key="user.id")
     duration: Optional[float] = None  # in hours
     subscription_id: Optional[uuid.UUID] = Field(foreign_key="subscription.id")
+    plan_instance_id: Optional[uuid.UUID] = Field(foreign_key="planinstance.id")
     client: Client = Relationship(back_populates="visits")
     notes: Optional[str] = Field(default = None, max_length = 1024)
     details: Dict[str, Any] = Field(
-        sa_column=Column(mutable_json_type(JSONB)), 
-        default_factory=dict
+        default_factory=dict, sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True))
     )
+    plan_instance: Optional["PlanInstance"] = Relationship(back_populates="visits")
 
 class NotificationCreate(SQLModel):
     message: str
@@ -422,8 +490,10 @@ class Payment(SQLModel, table=True):
     transaction_id: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     plan_id: Optional[uuid.UUID] = Field(foreign_key="plan.id")
+    plan_instance_id: Optional[uuid.UUID] = Field(foreign_key="planinstance.id")
     purchased_addons: Dict = Field(default_factory=list, sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)))
     plan: Optional["Plan"] = Relationship(back_populates="payments")
+    plan_instance: Optional["PlanInstance"] = Relationship(back_populates="payments")
 
 class AdminUser(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -446,5 +516,50 @@ class QRCode(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     client_id: uuid.UUID = Field(foreign_key="client.id")
     client: "Client" = Relationship(back_populates="qr_codes")
+
+class PlanTokenCreate(SQLModel):
+    plan_instance_id: uuid.UUID
+    token_value: Optional[str] = None  # If not provided, will be auto-generated
+    max_uses: Optional[int] = None
+    expires_at: Optional[datetime] = None
+    
+class PlanTokenPublic(SQLModel):
+    id: uuid.UUID
+    plan_id: uuid.UUID
+    plan_instance_id: uuid.UUID
+    token_value: str
+    uses_count: int
+    max_uses: Optional[int]
+    is_active: bool
+    expires_at: Optional[datetime]
+    created_at: datetime
+    
+class PlanToken(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    plan_id: uuid.UUID = Field(foreign_key="plan.id")
+    plan_instance_id: uuid.UUID = Field(foreign_key="planinstance.id")
+    token_value: str = Field(index=True, unique=True)
+    uses_count: int = Field(default=0)
+    max_uses: Optional[int] = None
+    is_active: bool = Field(default=True)
+    expires_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    plan: Plan = Relationship(back_populates="tokens")
+    plan_instance: "PlanInstance" = Relationship(back_populates="tokens")
+    token_uses: List["PlanTokenUse"] = Relationship(back_populates="token")
+    
+
+class PlanTokenUseCreate(SQLModel):
+    token_id: uuid.UUID
+    client_id: uuid.UUID
+    
+class PlanTokenUse(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    token_id: uuid.UUID = Field(foreign_key="plantoken.id")
+    client_id: uuid.UUID = Field(foreign_key="client.id")
+    used_at: datetime = Field(default_factory=datetime.utcnow)
+    token: PlanToken = Relationship(back_populates="token_uses")
+    client: "Client" = Relationship()
+
 #class MetricsLog(SQLModel, table=True):
  #   metric:str
