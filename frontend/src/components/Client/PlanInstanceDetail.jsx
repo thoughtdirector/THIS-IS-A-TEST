@@ -110,7 +110,7 @@ const PlanInstanceDetail = () => {
       <div className="container mx-auto py-6">
         <div className="flex items-center mb-6">
           <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to="/client/plans">
+            <Link to="/dashboard/client/plans">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -125,7 +125,7 @@ const PlanInstanceDetail = () => {
       <div className="container mx-auto py-6">
         <div className="flex items-center mb-6">
           <Button variant="outline" size="icon" asChild className="mr-4">
-            <Link to="/client/plans">
+            <Link to="/dashboard/client/plans">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -141,13 +141,14 @@ const PlanInstanceDetail = () => {
   }
   
   const plan = planInstance.plan;
+
   const remainingAmount = planInstance.total_cost - planInstance.paid_amount;
-  
+ 
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/client/plans">
+          <Link to="/dashboard/client/plans">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

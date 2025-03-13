@@ -2,21 +2,32 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ClientService } from '@/client/services';
-import { Search, Calendar, Clock, CreditCard, Users, Package, Check, ArrowRight } from 'lucide-react';
+import { Search, Calendar, Clock, CreditCard, Users, Package, Check, ArrowRight, Tag, QrCode, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { formatCurrency } from '@/lib/utils';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const ClientPlans = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTag, setSelectedTag] = useState(null);
   
   // Fetch available plans
   const { data: plans, isLoading, isError, error } = useQuery({
-    queryKey: ['clientPlans'],
-    queryFn: () => ClientService.getAvailablePlans({ active_only: true }),
+    queryKey: ['clientPlans', selectedTag],
+    queryFn: () => ClientService.getAvailablePlans({ 
+      active_only: true,
+      tag: selectedTag || undefined
+    }),
   });
   
   // Fetch client's active plan instances
@@ -31,8 +42,25 @@ const ClientPlans = () => {
     plan.description.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
   
+  // Extract all unique tags from all plans
+  const allTags = plans?.reduce((tags, plan) => {
+    if (plan.tags && Array.isArray(plan.tags)) {
+      plan.tags.forEach(tag => {
+        if (!tags.includes(tag)) {
+          tags.push(tag);
+        }
+      });
+    }
+    return tags;
+  }, []) || [];
+  
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+  };
+  
+  const handleTagChange = (tag) => {
+    // If 'all' is selected, set to null for consistency
+    setSelectedTag(tag === 'all' ? null : tag);
   };
   
   // Demo data for when real data is loading
@@ -44,7 +72,8 @@ const ClientPlans = () => {
       price: 99.99,
       duration_days: 30,
       entries: null,
-      is_active: true
+      is_active: true,
+      tags: ["subscription", "unlimited"]
     },
     {
       id: "123e4567-e89b-12d3-a456-426614174002",
@@ -53,7 +82,8 @@ const ClientPlans = () => {
       price: 199.99,
       duration_days: 30,
       entries: null,
-      is_active: true
+      is_active: true,
+      tags: ["family", "subscription"]
     },
     {
       id: "123e4567-e89b-12d3-a456-426614174003",
@@ -62,7 +92,8 @@ const ClientPlans = () => {
       price: 79.99,
       duration_days: 60,
       entries: 10,
-      is_active: true
+      is_active: true,
+      tags: ["pass", "limited"]
     }
   ];
 
@@ -97,15 +128,34 @@ const ClientPlans = () => {
     <div className="container mx-auto py-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h1 className="text-2xl font-bold mb-4 md:mb-0">Available Plans</h1>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            type="search"
-            placeholder="Search plans..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={handleSearch}
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button asChild className="mb-4 sm:mb-0 sm:mr-4">
+            <Link to="/dashboard/client/register-child">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Register Family Member
+            </Link>
+          </Button>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              type="search"
+              placeholder="Search plans..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+          </div>
+          <Select value={selectedTag || 'all'} onValueChange={handleTagChange}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {allTags.map(tag => (
+                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       
@@ -142,8 +192,14 @@ const ClientPlans = () => {
                 </CardContent>
                 <CardFooter className="flex justify-end space-x-2">
                   <Button asChild size="sm">
-                    <Link to={`/client/plan-instances/${planInstance.id}`}>
+                    <Link to={`/dashboard/client/plan-instances/${planInstance.id}`}>
                       View Details
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/dashboard/client/plan-qr-generator/${planInstance.id}`}>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Generate QR
                     </Link>
                   </Button>
                 </CardFooter>
@@ -168,6 +224,16 @@ const ClientPlans = () => {
               <CardHeader>
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
+                {plan.tags && plan.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {plan.tags.map(tag => (
+                      <Badge key={tag} variant="outline" className="flex items-center gap-1">
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold mb-4">
@@ -199,7 +265,7 @@ const ClientPlans = () => {
               </CardContent>
               <CardFooter className="flex justify-end space-x-2">
                 <Button asChild size="sm">
-                  <Link to={`/client/plans/${plan.id}/purchase`}>
+                  <Link to={`/dashboard/client/plans/${plan.id}/purchase`}>
                     Purchase
                   </Link>
                 </Button>

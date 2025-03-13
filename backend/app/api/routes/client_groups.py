@@ -1,15 +1,45 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select, Session
 from typing import Any, List, Optional
 from datetime import datetime
-from app.api.deps import CurrentUser, SessionDep, GetAdminUser
+from app.api.deps import (CurrentUser, SessionDep, GetAdminUser, GetClientGroupFromPath, 
+                          GetClientFromPath, GetClientGroupFromQuery)
 from app.models import (
     Client, ClientPublic, ClientCreate, ClientUpdate,
-    ClientGroup, Subscription, SubscriptionPublic, User
+    ClientGroup, Subscription, SubscriptionPublic, User, ClientGroupPublic, QRCode
 )
 import uuid
 
-router = APIRouter(prefix="/client-groups", tags=["client-groups"])
+router = APIRouter()
+
+
+
+# Client Group Routes for Clients (non-admin users)
+@router.get("/my-groups", response_model=List[ClientGroupPublic])
+async def get_my_client_groups(
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100
+) -> Any:
+    """Get all client groups where the current user is an admin"""
+    # Get the client associated with the current user
+    client = session.exec(
+        select(Client).where(Client.user_id == current_user.id)
+    ).first()
+    
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found for current user")
+    
+    # Get groups where this client is an admin
+    statement = select(ClientGroup).where(
+        ClientGroup.id.in_(
+            select(ClientGroup.id).join(Client, ClientGroup.admins).where(Client.id == client.id)
+        )
+    ).offset(skip).limit(limit)
+    
+    groups = session.exec(statement).all()
+    return groups
 
 # ClientGroup Management Routes
 @router.post("", response_model=ClientGroup)
@@ -243,3 +273,62 @@ def remove_admin_from_group(
     session.commit()
     
     return {"message": "Admin successfully removed from group"}
+
+
+# Routes for managing group admins (client-side)
+@router.post("/{group_id}/admin-clients/{client_id}", response_model=dict)
+def add_client_admin_to_group(
+    *,
+    session: SessionDep,
+    current_user: GetAdminUser,
+    group_id: uuid.UUID,
+    client_id: uuid.UUID
+) -> Any:
+    """Add a client as an admin to a client group"""
+    # Verify group exists
+    client_group = session.get(ClientGroup, group_id)
+    if not client_group:
+        raise HTTPException(status_code=404, detail="Client group not found")
+    
+    # Verify client exists
+    client = session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Make client a group admin by updating the client record
+    client.group_admin = client_group
+    session.add(client)
+    session.commit()
+    
+    return {"message": f"Client {client_id} added as admin to group {group_id}"}
+
+@router.delete("/{group_id}/admin-clients/{client_id}", response_model=dict)
+def remove_client_admin_from_group(
+    *,
+    session: SessionDep,
+    current_user: GetAdminUser,
+    group_id: uuid.UUID,
+    client_id: uuid.UUID
+) -> Any:
+    """Remove a client as an admin from a client group"""
+    # Verify group exists
+    client_group = session.get(ClientGroup, group_id)
+    if not client_group:
+        raise HTTPException(status_code=404, detail="Client group not found")
+    
+    # Verify client exists
+    client = session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Check if client is an admin of this group
+    if client.group_admin and client.group_admin.id == group_id:
+        client.group_admin = None
+        session.add(client)
+        session.commit()
+        return {"message": f"Client {client_id} removed as admin from group {group_id}"}
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Client is not an admin of this group"
+        )

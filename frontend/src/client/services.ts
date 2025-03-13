@@ -778,7 +778,7 @@ export class ClientService {
   public static registerClient(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/admin/register",
+      url: "/api/v1/clients/management/register",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -790,7 +790,7 @@ export class ClientService {
   public static registerChildClient(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/clients/register/child",
+      url: "/api/v1/clients/management/register/child",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -803,7 +803,7 @@ export class ClientService {
   public static createReservation(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/clients/reservations",
+      url: "/api/v1/clients/plans/reservations",
       body: data,
       errors: {
         400: `Invalid subscription or time slot already booked`,
@@ -817,7 +817,7 @@ export class ClientService {
   public static createPayment(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/clients/payments",
+      url: "/api/v1/clients/plans/payments",
       body: data,
       errors: {
         422: `Validation Error`,
@@ -832,7 +832,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/clients/visits",
+      url: "/api/v1/clients/plans/visits",
       query: {
         skip,
         limit,
@@ -845,18 +845,35 @@ export class ClientService {
   }
 
   public static getAvailablePlans(data) {
-    const { skip = 0, limit = 100, active_only = true } = data;
+    const { skip = 0, limit = 100, active_only = true, tag = undefined } = data;
+    
+    // Don't send 'all' tag to the backend (treat it as no filter)
+    const tagParam = tag && tag !== 'all' ? tag : undefined;
     
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/clients/available-plans",
+      url: "/api/v1/clients/plans/available-plans",
       query: {
         skip,
         limit,
         active_only,
+        ...(tagParam && { tag: tagParam }),
       },
       errors: {
         401: `Unauthorized`,
+        422: `Validation Error`,
+      },
+      useOrg: true,
+    });
+  }
+
+  public static getPlanById(planId) {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/clients/plans/available-plans/${planId}`,
+      errors: {
+        401: `Unauthorized`,
+        404: `Not Found`,
         422: `Validation Error`,
       },
       useOrg: true,
@@ -868,7 +885,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/clients/client-groups",
+      url: "/api/v1/clients/groups/my-groups",
       query: {
         skip,
         limit,
@@ -884,7 +901,7 @@ export class ClientService {
   public static createPlanInstance(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/clients/plan-instances",
+      url: "/api/v1/clients/plans/plan-instances",
       body: data,
       errors: {
         401: `Unauthorized`,
@@ -901,7 +918,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/clients/plan-instances",
+      url: "/api/v1/clients/plans/plan-instances",
       query: {
         skip,
         limit,
@@ -920,7 +937,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: `/api/v1/clients/plan-instances/${instanceId}`,
+      url: `/api/v1/clients/plans/plan-instances/${instanceId}`,
       errors: {
         401: `Unauthorized`,
         404: `Not Found`,
@@ -935,7 +952,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: `/api/v1/clients/plan-instances/${instanceId}/visits`,
+      url: `/api/v1/clients/plans/plan-instances/${instanceId}/visits`,
       query: {
         skip,
         limit,
@@ -954,7 +971,7 @@ export class ClientService {
     
     return __request(OpenAPI, {
       method: "GET",
-      url: `/api/v1/clients/plan-instances/${instanceId}/payments`,
+      url: `/api/v1/clients/plans/plan-instances/${instanceId}/payments`,
       query: {
         skip,
         limit,
@@ -971,7 +988,7 @@ export class ClientService {
   public static makePayment(data) {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/clients/payments",
+      url: "/api/v1/clients/plans/payments",
       body: data,
       errors: {
         401: `Unauthorized`,

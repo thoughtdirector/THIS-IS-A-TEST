@@ -141,8 +141,8 @@ class User(SQLModel, table=True):
 
 class ClientBase(SQLModel):
     full_name: str = Field(max_length=255)
-    email: EmailStr = Field(unique=True, index=True)
-    phone: str = Field(max_length=20)
+    email: Optional[EmailStr] = Field(index=True) #MIGHT NEED unique=True
+    phone: Optional[str] = Field(max_length=20)
     is_active: bool = True
     is_child: bool = False
     qr_code: Optional[str] = None
@@ -150,8 +150,8 @@ class ClientBase(SQLModel):
 class ClientPublic(SQLModel):
     id: uuid.UUID
     full_name: str
-    email: EmailStr
-    phone: str
+    email: Optional[EmailStr]
+    phone: Optional[str]
     is_child: bool
     qr_code: Optional[str]
 
@@ -160,8 +160,8 @@ class ClientPublic(SQLModel):
 class ClientCreate(SQLModel):
     identification: str = Field(max_length=255)
     full_name: str = Field(max_length=255)
-    email: EmailStr = Field(index=True)
-    phone: str = Field(max_length=20)
+    email: Optional[EmailStr] = Field(index=True)
+    phone: Optional[str] = Field(max_length=20)
     is_active: bool = True
     is_child: bool = False
     qr_code: Optional[str] = None
@@ -201,10 +201,10 @@ class ClientGroupPublic(SQLModel):
     id: uuid.UUID 
     name:str 
     created_at: datetime 
-    clients: List[Client]
+    clients: List[ClientPublic]
     subscriptions: List["Subscription"] 
     reservations: List["Reservation"] 
-    admins: List[Client] 
+    admins: List[ClientPublic] 
 
 class ClientGroup(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -236,6 +236,7 @@ class PlanUpdate(SQLModel):
     is_active: Optional[bool] = None
     addons: Optional[Dict[str, Any]] = None
     limits: Optional[Dict[str, Any]] = None
+    tags: Optional[List[str]] = None
 
 class PlanCreate(SQLModel):
     name: str = Field(max_length=255)
@@ -246,6 +247,14 @@ class PlanCreate(SQLModel):
     entries: Optional[int] = None         # Number of entries/uses allowed (replaces max_classes)
     addons: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure describing available add-ons with their pricing")
     limits: Optional[Dict[str, Any]] = Field(default=None, description="JSON structure defining limits (users, time, etc.)")
+    tags: Optional[List[str]] = Field(default=None, description="List of category tags (e.g., 'party', 'class')")
+
+class PlanPublic(SQLModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    price: float
+    duration_hours: Optional[int]
 
 class Plan(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -261,6 +270,9 @@ class Plan(SQLModel, table=True):
     limits: Dict = Field(default_factory=dict,
                          sa_column=Column(mutable_json_type(dbtype=JSONB, nested=True)),
                          description="Limits like max users, time, etc.")
+    tags: List[str] = Field(default_factory=list, 
+                         sa_column=Column(ARRAY(String)),
+                         description="List of category tags")
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
     payments: List["Payment"] = Relationship(back_populates="plan")
     tokens: List["PlanToken"] = Relationship(back_populates="plan")
@@ -274,6 +286,10 @@ class PlanInstanceCreate(SQLModel):
     purchased_addons: Optional[Dict[str, Any]] = None
     remaining_entries: Optional[int] = None
     remaining_limits: Optional[Dict[str, Any]] = None
+    payment_method: Optional[str] = "credit_card"
+    payment_type: Optional[str] = "full"  # "full" or "partial"
+    payment_amount: Optional[float] = None
+    payment_notes: Optional[str] = None
     
 class PlanInstancePublic(SQLModel):
     id: uuid.UUID
@@ -289,6 +305,8 @@ class PlanInstancePublic(SQLModel):
     remaining_limits: Optional[Dict[str, Any]]
     purchased_addons: Optional[Dict[str, Any]]
     created_at: datetime
+    plan: PlanPublic
+    client_group: ClientGroupPublic
     
 class PlanInstance(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

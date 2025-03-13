@@ -41,6 +41,8 @@ import NotificationCreate from './components/Dashboard/NotificationCreate'
 import ClientPlans from './components/Client/Plans'
 import PlanPurchase from './components/Client/PlanPurchase'
 import PlanInstanceDetail from './components/Client/PlanInstanceDetail'
+import PlanQRGenerator from './components/Client/PlanQRGenerator'
+import ChildRegister from './components/Client/ChildRegister'
 
 // Root route
 
@@ -274,6 +276,19 @@ const planInstanceDetailRoute = createRoute({
   component: PlanInstanceDetail,
 })
 
+const planQRGeneratorRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/plan-qr-generator/$planInstanceId',
+  component: PlanQRGenerator,
+})
+
+// Add the new child register route
+const childRegisterRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/register-child',
+  component: ChildRegister,
+})
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   layoutRoute.addChildren([
@@ -297,6 +312,8 @@ const routeTree = rootRoute.addChildren([
       clientPlansRoute,
       planPurchaseRoute,
       planInstanceDetailRoute,
+      planQRGeneratorRoute,
+      childRegisterRoute,
     ]),
     settingsRoute,
 

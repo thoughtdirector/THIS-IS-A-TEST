@@ -34,7 +34,7 @@ const useAuth = () => {
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
   })
-  console.log("AAAAAAAAAAAAA", user)
+ 
   // Check if the user is an admin
   const isAdmin = user?.admin_user !== undefined && user?.admin_user !== null
   
