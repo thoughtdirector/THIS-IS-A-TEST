@@ -20,6 +20,7 @@ from app.models import (
     UserCreate,
     UserPublic,
     UserRegister,
+    UserTermsStatus,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -369,3 +370,33 @@ def delete_user(
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
+
+@router.get("/terms-status")
+def get_terms_status(
+    current_user: CurrentUser
+) -> Any:
+    """
+    Get the terms status for the current user.
+    """
+
+    if current_user.terms_accepted:
+        return Message(message="Terms have been accepted")
+    
+    return HTTPException(
+        status_code=403,
+        detail="Terms have not been accepted"
+    )
+
+@router.post("/accept-terms")
+def accept_terms(
+    session: SessionDep,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Accept the terms for the current user.
+    """
+
+    current_user.terms_accepted = True
+    session.add(current_user)
+    session.commit()
+    return Message(message="Terms accepted successfully")
