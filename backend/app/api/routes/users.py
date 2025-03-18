@@ -20,7 +20,6 @@ from app.models import (
     UserCreate,
     UserPublic,
     UserRegister,
-    UserTermsStatus,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
