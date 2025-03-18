@@ -131,6 +131,7 @@ class User(SQLModel, table=True):
     full_name: Optional[str] = Field(default=None, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
+    terms_accepted: bool = False
     admin_user: Optional["AdminUser"] = Relationship(back_populates="user")
     
 
