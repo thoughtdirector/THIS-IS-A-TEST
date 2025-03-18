@@ -1,6 +1,6 @@
-import type { CancelablePromise } from "./core/CancelablePromise"
-import { OpenAPI } from "./core/OpenAPI"
-import { request as __request } from "./core/request"
+import type { CancelablePromise } from "./core/CancelablePromise";
+import { OpenAPI } from "./core/OpenAPI";
+import { request as __request } from "./core/request";
 
 import type {
   Body_login_login_access_token,
@@ -18,20 +18,20 @@ import type {
   ItemPublic,
   ItemsPublic,
   ItemUpdate,
-} from "./models"
+} from "./models";
 
 export type TDataLoginAccessToken = {
-  formData: Body_login_login_access_token
-}
+  formData: Body_login_login_access_token;
+};
 export type TDataRecoverPassword = {
-  email: string
-}
+  email: string;
+};
 export type TDataResetPassword = {
-  requestBody: NewPassword
-}
+  requestBody: NewPassword;
+};
 export type TDataRecoverPasswordHtmlContent = {
-  email: string
-}
+  email: string;
+};
 
 export class LoginService {
   /**
@@ -41,9 +41,9 @@ export class LoginService {
    * @throws ApiError
    **/
   public static loginAccessToken(
-    data: TDataLoginAccessToken,
+    data: TDataLoginAccessToken
   ): CancelablePromise<Token> {
-    const { formData } = data
+    const { formData } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/login/access-token",
@@ -52,8 +52,8 @@ export class LoginService {
       errors: {
         422: `Validation Error`,
       },
-      useOrg: false
-    })
+      useOrg: false,
+    });
   }
 
   /**
@@ -66,8 +66,8 @@ export class LoginService {
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/login/test-token",
-      useOrg: false
-    })
+      useOrg: false,
+    });
   }
 
   /**
@@ -77,9 +77,9 @@ export class LoginService {
    * @throws ApiError
    */
   public static recoverPassword(
-    data: TDataRecoverPassword,
+    data: TDataRecoverPassword
   ): CancelablePromise<Message> {
-    const { email } = data
+    const { email } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/password-recovery/{email}",
@@ -89,8 +89,8 @@ export class LoginService {
       errors: {
         422: `Validation Error`,
       },
-      useOrg: false
-    })
+      useOrg: false,
+    });
   }
 
   /**
@@ -100,9 +100,9 @@ export class LoginService {
    * @throws ApiError
    */
   public static resetPassword(
-    data: TDataResetPassword,
+    data: TDataResetPassword
   ): CancelablePromise<Message> {
-    const { requestBody } = data
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/reset-password/",
@@ -111,8 +111,8 @@ export class LoginService {
       errors: {
         422: `Validation Error`,
       },
-      useOrg: false
-    })
+      useOrg: false,
+    });
   }
 
   /**
@@ -122,9 +122,9 @@ export class LoginService {
    * @throws ApiError
    */
   public static recoverPasswordHtmlContent(
-    data: TDataRecoverPasswordHtmlContent,
+    data: TDataRecoverPasswordHtmlContent
   ): CancelablePromise<string> {
-    const { email } = data
+    const { email } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/password-recovery-html-content/{email}",
@@ -134,37 +134,37 @@ export class LoginService {
       errors: {
         422: `Validation Error`,
       },
-      useOrg: false
-    })
+      useOrg: false,
+    });
   }
 }
 
 export type TDataReadUsers = {
-  limit?: number
-  skip?: number
-}
+  limit?: number;
+  skip?: number;
+};
 export type TDataCreateUser = {
-  requestBody: UserCreate
-}
+  requestBody: UserCreate;
+};
 export type TDataUpdateUserMe = {
-  requestBody: UserUpdateMe
-}
+  requestBody: UserUpdateMe;
+};
 export type TDataUpdatePasswordMe = {
-  requestBody: UpdatePassword
-}
+  requestBody: UpdatePassword;
+};
 export type TDataRegisterUser = {
-  requestBody: UserRegister
-}
+  requestBody: UserRegister;
+};
 export type TDataReadUserById = {
-  userId: string
-}
+  userId: string;
+};
 export type TDataUpdateUser = {
-  requestBody: UserUpdate
-  userId: string
-}
+  requestBody: UserUpdate;
+  userId: string;
+};
 export type TDataDeleteUser = {
-  userId: string
-}
+  userId: string;
+};
 
 export class UsersService {
   /**
@@ -174,9 +174,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static readUsers(
-    data: TDataReadUsers = {},
+    data: TDataReadUsers = {}
   ): CancelablePromise<UsersPublic> {
-    const { limit = 100, skip = 0 } = data
+    const { limit = 100, skip = 0 } = data;
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/users/",
@@ -187,7 +187,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -197,9 +197,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static createUser(
-    data: TDataCreateUser,
+    data: TDataCreateUser
   ): CancelablePromise<UserPublic> {
-    const { requestBody } = data
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/users/",
@@ -208,7 +208,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -221,7 +221,7 @@ export class UsersService {
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/users/me",
-    })
+    });
   }
 
   /**
@@ -234,7 +234,7 @@ export class UsersService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/users/me",
-    })
+    });
   }
 
   /**
@@ -244,9 +244,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static updateUserMe(
-    data: TDataUpdateUserMe,
+    data: TDataUpdateUserMe
   ): CancelablePromise<UserPublic> {
-    const { requestBody } = data
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "PATCH",
       url: "/api/v1/users/me",
@@ -255,7 +255,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -265,9 +265,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static updatePasswordMe(
-    data: TDataUpdatePasswordMe,
+    data: TDataUpdatePasswordMe
   ): CancelablePromise<Message> {
-    const { requestBody } = data
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "PATCH",
       url: "/api/v1/users/me/password",
@@ -276,7 +276,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -285,10 +285,8 @@ export class UsersService {
    * @returns UserPublic Successful Response
    * @throws ApiError
    */
-  public static registerUser(
-    data,
-  ): CancelablePromise<UserPublic> {
-    const { requestBody } = data
+  public static registerUser(data): CancelablePromise<UserPublic> {
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/users/signup",
@@ -297,7 +295,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -306,10 +304,8 @@ export class UsersService {
    * @returns UserPublic Successful Response
    * @throws ApiError
    */
-  public static signupUser(
-    data,
-  ): CancelablePromise<UserPublic> {
-    const { requestBody } = data
+  public static signupUser(data): CancelablePromise<UserPublic> {
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/users/signup",
@@ -318,7 +314,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -328,9 +324,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static readUserById(
-    data: TDataReadUserById,
+    data: TDataReadUserById
   ): CancelablePromise<UserPublic> {
-    const { userId } = data
+    const { userId } = data;
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/users/{user_id}",
@@ -340,7 +336,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -350,9 +346,9 @@ export class UsersService {
    * @throws ApiError
    */
   public static updateUser(
-    data: TDataUpdateUser,
+    data: TDataUpdateUser
   ): CancelablePromise<UserPublic> {
-    const { requestBody, userId } = data
+    const { requestBody, userId } = data;
     return __request(OpenAPI, {
       method: "PATCH",
       url: "/api/v1/users/{user_id}",
@@ -364,7 +360,7 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -374,7 +370,7 @@ export class UsersService {
    * @throws ApiError
    */
   public static deleteUser(data: TDataDeleteUser): CancelablePromise<Message> {
-    const { userId } = data
+    const { userId } = data;
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/users/{user_id}",
@@ -384,13 +380,13 @@ export class UsersService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 }
 
 export type TDataTestEmail = {
-  emailTo: string
-}
+  emailTo: string;
+};
 
 export class UtilsService {
   /**
@@ -400,7 +396,7 @@ export class UtilsService {
    * @throws ApiError
    */
   public static testEmail(data: TDataTestEmail): CancelablePromise<Message> {
-    const { emailTo } = data
+    const { emailTo } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/utils/test-email/",
@@ -410,7 +406,7 @@ export class UtilsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -422,27 +418,27 @@ export class UtilsService {
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/utils/health-check/",
-    })
+    });
   }
 }
 
 export type TDataReadItems = {
-  limit?: number
-  skip?: number
-}
+  limit?: number;
+  skip?: number;
+};
 export type TDataCreateItem = {
-  requestBody: ItemCreate
-}
+  requestBody: ItemCreate;
+};
 export type TDataReadItem = {
-  id: string
-}
+  id: string;
+};
 export type TDataUpdateItem = {
-  id: string
-  requestBody: ItemUpdate
-}
+  id: string;
+  requestBody: ItemUpdate;
+};
 export type TDataDeleteItem = {
-  id: string
-}
+  id: string;
+};
 
 export class ItemsService {
   /**
@@ -452,9 +448,9 @@ export class ItemsService {
    * @throws ApiError
    */
   public static readItems(
-    data: TDataReadItems = {},
+    data: TDataReadItems = {}
   ): CancelablePromise<ItemsPublic> {
-    const { limit = 100, skip = 0 } = data
+    const { limit = 100, skip = 0 } = data;
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/items/",
@@ -465,7 +461,7 @@ export class ItemsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -475,9 +471,9 @@ export class ItemsService {
    * @throws ApiError
    */
   public static createItem(
-    data: TDataCreateItem,
+    data: TDataCreateItem
   ): CancelablePromise<ItemPublic> {
-    const { requestBody } = data
+    const { requestBody } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/items/",
@@ -486,7 +482,7 @@ export class ItemsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -496,7 +492,7 @@ export class ItemsService {
    * @throws ApiError
    */
   public static readItem(data: TDataReadItem): CancelablePromise<ItemPublic> {
-    const { id } = data
+    const { id } = data;
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/items/{id}",
@@ -506,7 +502,7 @@ export class ItemsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -516,9 +512,9 @@ export class ItemsService {
    * @throws ApiError
    */
   public static updateItem(
-    data: TDataUpdateItem,
+    data: TDataUpdateItem
   ): CancelablePromise<ItemPublic> {
-    const { id, requestBody } = data
+    const { id, requestBody } = data;
     return __request(OpenAPI, {
       method: "PUT",
       url: "/api/v1/items/{id}",
@@ -530,7 +526,7 @@ export class ItemsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 
   /**
@@ -540,7 +536,7 @@ export class ItemsService {
    * @throws ApiError
    */
   public static deleteItem(data: TDataDeleteItem): CancelablePromise<Message> {
-    const { id } = data
+    const { id } = data;
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/items/{id}",
@@ -550,103 +546,99 @@ export class ItemsService {
       errors: {
         422: `Validation Error`,
       },
-    })
+    });
   }
 }
 
-export class ChatService  {
+export class ChatService {
+  public static getChats(data) {
+    const { projectId, limit = 5, skip = 0 } = data;
 
-  public static getChats(data){
-    
-    const { projectId, limit = 5, skip = 0 } = data
-    
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/processing/chats/?project_id={projectId}",
-      path:{projectId},
+      path: { projectId },
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
 
-  public static getChat(data){
-    const { chatId, projectId } = data
-   
+  public static getChat(data) {
+    const { chatId, projectId } = data;
+
     return __request(OpenAPI, {
       method: "GET",
-      url: projectId?"/api/v1/processing/chats/{chatId}?project_id={projectId}":"/api/v1/processing/chats/{chatId}",
+      url: projectId
+        ? "/api/v1/processing/chats/{chatId}?project_id={projectId}"
+        : "/api/v1/processing/chats/{chatId}",
       path: {
         chatId,
-        projectId
+        projectId,
       },
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
 
-
-  public static createChat(data){
-    const {  projectId, name } = data
+  public static createChat(data) {
+    const { projectId, name } = data;
     return __request(OpenAPI, {
       method: "POST",
       url: `/api/v1/processing/chats/?project_id={projectId}`,
-      path:{
+      path: {
         projectId,
       },
-      body: { chat_create:{name: name?name:"New Chat"} },
+      body: { chat_create: { name: name ? name : "New Chat" } },
       mediaType: "application/json",
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
 
-  public static createMessage(data){
-    const { chatId, projectId, content } = data
+  public static createMessage(data) {
+    const { chatId, projectId, content } = data;
     return __request(OpenAPI, {
       method: "POST",
-      url: projectId?`/api/v1/processing/chats/{chatId}/messages?project_id={projectId}`:"/api/v1/processing/chats/{chatId}/messages",
-      body: { message:{content: content} },
+      url: projectId
+        ? `/api/v1/processing/chats/{chatId}/messages?project_id={projectId}`
+        : "/api/v1/processing/chats/{chatId}/messages",
+      body: { message: { content: content } },
       path: {
         chatId,
-        projectId
+        projectId,
       },
       mediaType: "application/json",
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
-};
+}
 
+export class ProjectService {
+  public static getProjects(data) {
+    const { limit = 5, skip = 0 } = data;
 
-
-
-export class ProjectService  {
-
-  public static getProjects(data){
-    
-    const { limit = 5, skip = 0 } = data
-    
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/projects/",
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
 
-  public static getProject(data){
-    const { projectId } = data
-   
+  public static getProject(data) {
+    const { projectId } = data;
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/projects/{projectId}",
@@ -656,12 +648,11 @@ export class ProjectService  {
       errors: {
         422: `Validation Error`,
       },
-      useOrg: true
-    })
+      useOrg: true,
+    });
   }
 
-
-  public static createProjectChat(){
+  public static createProjectChat() {
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/processing/chats/project_starter",
@@ -669,36 +660,30 @@ export class ProjectService  {
         422: `Validation Error`,
       },
       useOrg: true,
-    })
+    });
   }
+}
 
-};
+export class TaskService {
+  public static getTasks(data) {
+    const { limit = 5, skip = 0, projectId } = data;
 
-
-
-
-export class TaskService  {
-
-  public static getTasks(data){
-    
-    const { limit = 5, skip = 0, projectId } = data
-    
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/tasks/?project_id={projectId}",
-      path:{
-        projectId
+      path: {
+        projectId,
       },
       errors: {
         422: `Validation Error`,
       },
       useOrg: true,
-    })
+    });
   }
 
-  public static getTask(data){
-    const { taskId } = data
-   
+  public static getTask(data) {
+    const { taskId } = data;
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/tasks/{taskId}",
@@ -709,11 +694,10 @@ export class TaskService  {
         422: `Validation Error`,
       },
       useOrg: true,
-    })
+    });
   }
 
-
-  public static createTask(){
+  public static createTask() {
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/processing/tasks/",
@@ -721,26 +705,18 @@ export class TaskService  {
         422: `Validation Error`,
       },
       useOrg: true,
-    })
+    });
+  }
+}
+
+export class OrganizationService {
+  public static activateOrganization(orgId) {
+    return { id: orgId };
   }
 
-};
+  public static getOrganizations(data) {
+    const { limit = 5, skip = 0 } = data;
 
-
-
-
-
-export class OrganizationService  {
-
-  public static activateOrganization(orgId){
-   
-    return {id:orgId}
-  }
-
-  public static getOrganizations(data){
-    
-    const { limit = 5, skip = 0 } = data
-    
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/organizations/",
@@ -748,12 +724,12 @@ export class OrganizationService  {
         422: `Validation Error`,
       },
       useOrg: false,
-    })
+    });
   }
 
-  public static getOrganization(data){
-    const { organizationId } = data
-   
+  public static getOrganization(data) {
+    const { organizationId } = data;
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/organizations/{organizationId}",
@@ -764,14 +740,9 @@ export class OrganizationService  {
         422: `Validation Error`,
       },
       useOrg: false,
-    })
+    });
   }
-
-
-  
-
-};
-
+}
 
 export class ClientService {
   // Client Registration
@@ -829,7 +800,7 @@ export class ClientService {
   // Client Visits
   public static getVisits(data) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/clients/plans/visits",
@@ -846,10 +817,10 @@ export class ClientService {
 
   public static getAvailablePlans(data) {
     const { skip = 0, limit = 100, active_only = true, tag = undefined } = data;
-    
+
     // Don't send 'all' tag to the backend (treat it as no filter)
-    const tagParam = tag && tag !== 'all' ? tag : undefined;
-    
+    const tagParam = tag && tag !== "all" ? tag : undefined;
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/clients/plans/available-plans",
@@ -880,9 +851,11 @@ export class ClientService {
     });
   }
 
-  public static getClientGroups(data = {}) {
+  public static getClientGroups(
+    data: { skip: number; limit: number } = { skip: 0, limit: 100 }
+  ) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/clients/groups/my-groups",
@@ -913,9 +886,15 @@ export class ClientService {
     });
   }
 
-  public static getClientPlanInstances(data = {}) {
+  public static getClientPlanInstances(
+    data: { skip: number; limit: number; active_only: boolean } = {
+      skip: 0,
+      limit: 100,
+      active_only: false,
+    }
+  ) {
     const { skip = 0, limit = 100, active_only = false } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/clients/plans/plan-instances",
@@ -934,7 +913,7 @@ export class ClientService {
 
   public static getPlanInstance(data) {
     const { instanceId } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/clients/plans/plan-instances/${instanceId}`,
@@ -949,7 +928,7 @@ export class ClientService {
 
   public static getPlanInstanceVisits(data) {
     const { instanceId, skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/clients/plans/plan-instances/${instanceId}/visits`,
@@ -968,7 +947,7 @@ export class ClientService {
 
   public static getPlanInstancePayments(data) {
     const { instanceId, skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/clients/plans/plan-instances/${instanceId}/payments`,
@@ -1018,7 +997,7 @@ export class DashboardService {
   // Client management
   public static getClients(data) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/clients",
@@ -1037,7 +1016,7 @@ export class DashboardService {
 
   public static getClientGroups(data) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/client-groups",
@@ -1072,7 +1051,7 @@ export class DashboardService {
   // Visit management
   public static checkInClient(data) {
     const { client_id, check_in } = data;
-    
+
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/admin/visits/check-in",
@@ -1093,7 +1072,7 @@ export class DashboardService {
 
   public static checkOutClient(data) {
     const { visit_id } = data;
-    
+
     return __request(OpenAPI, {
       method: "PUT",
       url: `/api/v1/admin/visits/${visit_id}/check-out`,
@@ -1110,7 +1089,7 @@ export class DashboardService {
 
   public static checkQrCode(data) {
     const { client_id, qr_code_id } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/check-qr",
@@ -1131,7 +1110,7 @@ export class DashboardService {
 
   public static getAllVisits(data) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/all-visits",
@@ -1150,7 +1129,7 @@ export class DashboardService {
 
   public static getAllActiveVisits(data) {
     const { skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/all-active-visits",
@@ -1170,7 +1149,7 @@ export class DashboardService {
   // Plan management
   public static getAllPlans(data) {
     const { skip = 0, limit = 100, active_only = false } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/plans",
@@ -1204,7 +1183,7 @@ export class DashboardService {
 
   public static getPlan(data) {
     const { id } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/admin/plans/${id}`,
@@ -1220,7 +1199,7 @@ export class DashboardService {
 
   public static updatePlan(data) {
     const { planId, requestBody } = data;
-    
+
     return __request(OpenAPI, {
       method: "PUT",
       url: `/api/v1/admin/plans/${planId}`,
@@ -1237,7 +1216,7 @@ export class DashboardService {
 
   public static deletePlan(data) {
     const { id } = data;
-    
+
     return __request(OpenAPI, {
       method: "DELETE",
       url: `/api/v1/admin/plans/${id}`,
@@ -1253,7 +1232,7 @@ export class DashboardService {
 
   public static getPlanSubscriptions(data) {
     const { plan_id, skip = 0, limit = 100 } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/admin/plans/${plan_id}/subscriptions`,
@@ -1274,7 +1253,7 @@ export class DashboardService {
   // Reservation management
   public static getAllReservations(data) {
     const { skip = 0, limit = 100, upcoming_only = false } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/all-reservations",
@@ -1294,7 +1273,7 @@ export class DashboardService {
 
   public static getAllPayments(data) {
     const { skip = 0, limit = 100, upcoming_only = false } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/all-payments",
@@ -1314,7 +1293,7 @@ export class DashboardService {
 
   public static getAllSubscriptions(data) {
     const { skip = 0, limit = 100, upcoming_only = false } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/admin/all-subscriptions",
@@ -1335,7 +1314,7 @@ export class DashboardService {
   // Subscription management
   public static approveSubscription(data) {
     const { subscription_id } = data;
-    
+
     return __request(OpenAPI, {
       method: "PUT",
       url: `/api/v1/admin/subscriptions/${subscription_id}/approve`,
@@ -1351,7 +1330,7 @@ export class DashboardService {
 
   public static forceCreateSubscription(data) {
     const { client_group_id, ...subscriptionData } = data;
-    
+
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/admin/subscriptions/force-create",
@@ -1371,7 +1350,7 @@ export class DashboardService {
 
   public static createPlanToken(data) {
     const { plan_id, ...rest } = data;
-    
+
     return __request(OpenAPI, {
       method: "POST",
       url: `/api/v1/admin/plans/${plan_id}/tokens`,
@@ -1388,7 +1367,7 @@ export class DashboardService {
 
   public static getPlanTokens(data) {
     const { plan_id } = data;
-    
+
     return __request(OpenAPI, {
       method: "GET",
       url: `/api/v1/admin/plans/${plan_id}/tokens`,
@@ -1404,7 +1383,7 @@ export class DashboardService {
 
   public static validateToken(data) {
     const { token_value } = data;
-    
+
     return __request(OpenAPI, {
       method: "POST",
       url: `/api/v1/admin/tokens/validate`,
