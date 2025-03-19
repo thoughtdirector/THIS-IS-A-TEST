@@ -233,7 +233,7 @@ const SignUp = () => {
                       htmlFor="acceptTerms"
                       className="text-sm font-medium cursor-pointer"
                     >
-                      I accept the Terms and Conditions
+                      "He leído y acepto los Términos y Condiciones"
                     </label>
                   </div>
                   <button
