@@ -73,6 +73,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name,
+        terms_accepted: acceptTerms
       },
       client_in: {
         identification: formData.identification,
