@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Save, FileText, Clipboard, UserPlus, Camera, QrCode, Users } from 'lucide-react';
+import { ArrowLeft, Save, FileText, Clipboard, UserPlus, Camera, Users } from 'lucide-react';
 import { ClientService } from '../../client/services';
 import useAuth from '../../hooks/useAuth';
-import QRCodeGenerator from 'react-qr-code';
 
 // Import ShadCN UI components
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -16,7 +15,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ChildRegister = () => {
   const queryClient = useQueryClient();
