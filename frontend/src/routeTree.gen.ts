@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
+import { Route as ParkEntryImport } from './routes/park-entry'
 import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as ActivateOrganizationImport } from './routes/_activateOrganization'
@@ -44,6 +45,11 @@ const ResetPasswordRoute = ResetPasswordImport.update({
 
 const RecoverPasswordRoute = RecoverPasswordImport.update({
   path: '/recover-password',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ParkEntryRoute = ParkEntryImport.update({
+  path: '/park-entry',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -142,6 +148,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/park-entry': {
+      preLoaderRoute: typeof ParkEntryImport
+      parentRoute: typeof rootRoute
+    }
     '/recover-password': {
       preLoaderRoute: typeof RecoverPasswordImport
       parentRoute: typeof rootRoute
@@ -208,6 +218,7 @@ export const routeTree = rootRoute.addChildren([
   ActivateOrganizationRoute,
   LayoutRoute,
   LoginRoute,
+  ParkEntryRoute,
   RecoverPasswordRoute,
   ResetPasswordRoute,
   SignupRoute,

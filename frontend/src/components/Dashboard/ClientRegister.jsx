@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Save, UserPlus, Users } from 'lucide-react';
 import { ClientService, DashboardService } from '../../client/services';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 // Import ShadCN UI components
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -20,19 +22,24 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import ChildRegister from '@/components/Client/ChildRegister';
 
 const ClientRegister = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('individual');
   const [client, setClient] = useState({
-    full_name: '',
+    username: '',
+    password: '',
+    confirm_password: '',
+    client_name: '',
     email: '',
+    address: '',
     phone: '',
-    is_active: true,
-    is_child: false,
-    guardian_id: null,
-    group_id: null
+    client_type: '',
+    document_id: '',
+    client_group_id: null,
+    active: false,
   });
   const [childClient, setChildClient] = useState({
     full_name: '',
@@ -118,29 +125,21 @@ const ClientRegister = () => {
   };
   
   return (
-    <div className="container mx-auto py-6 max-w-3xl">
-      <div className="flex items-center mb-6">
-        <Button variant="outline" size="icon" asChild className="mr-4">
-          <Link to="/dashboard/clients">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="space-y-2">
         <h1 className="text-2xl font-bold">Register New Client</h1>
+        <p className="text-sm text-muted-foreground">
+          Fill in the form below to register a new client
+        </p>
       </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+
+      <Tabs defaultValue="client">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="individual" className="flex items-center">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Individual Client
-          </TabsTrigger>
-          <TabsTrigger value="child" className="flex items-center">
-            <Users className="mr-2 h-4 w-4" />
-            Child/Dependent
-          </TabsTrigger>
+          <TabsTrigger value="client">Individual Client</TabsTrigger>
+          <TabsTrigger value="child">Child/Dependent</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="individual">
+        <TabsContent value="client">
           <Card>
             <CardHeader>
               <CardTitle>Register Individual Client</CardTitle>
@@ -246,120 +245,9 @@ const ClientRegister = () => {
             </form>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="child">
-          <Card>
-            <CardHeader>
-              <CardTitle>Register Child/Dependent</CardTitle>
-              <CardDescription>
-                Register a child or dependent under a guardian's account
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="guardian_id">Guardian/Parent</Label>
-                  <Select
-                    value={childClient.guardian_id}
-                    onValueChange={(value) => 
-                      setChildClient({...childClient, guardian_id: value})
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a guardian" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients && clients
-                        .filter(c => !c.is_child)
-                        .map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.full_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  {clientsLoading && <p className="text-sm text-gray-500">Loading clients...</p>}
-                  {clientsError && <p className="text-sm text-red-500">Error loading clients</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="child_full_name">Child's Full Name</Label>
-                  <Input
-                    id="child_full_name"
-                    name="full_name"
-                    value={childClient.full_name}
-                    onChange={handleChildClientChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="child_email">Email Address (Optional)</Label>
-                  <Input
-                    id="child_email"
-                    name="email"
-                    type="email"
-                    value={childClient.email}
-                    onChange={handleChildClientChange}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="child_phone">Phone Number (Optional)</Label>
-                  <Input
-                    id="child_phone"
-                    name="phone"
-                    value={childClient.phone}
-                    onChange={handleChildClientChange}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox
-                    id="child_is_active"
-                    name="is_active"
-                    checked={childClient.is_active}
-                    onCheckedChange={(checked) => 
-                      setChildClient({...childClient, is_active: checked})
-                    }
-                  />
-                  <Label htmlFor="child_is_active">Account is active</Label>
-                </div>
-                
-                {registerChildMutation.isError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      {registerChildMutation.error?.message || "Error registering child client"}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate({ to: '/dashboard/clients' })}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={registerChildMutation.isPending || !childClient.guardian_id}
-                  className="flex items-center"
-                >
-                  {registerChildMutation.isPending ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Register Child
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
+          <ChildRegister />
         </TabsContent>
       </Tabs>
     </div>
