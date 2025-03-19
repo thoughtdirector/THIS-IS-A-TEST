@@ -854,6 +854,7 @@ export class ClientService {
   public static getClientGroups(
     data: { skip: number; limit: number } = { skip: 0, limit: 100 }
   ) {
+
     const { skip = 0, limit = 100 } = data;
 
     return __request(OpenAPI, {
@@ -886,6 +887,7 @@ export class ClientService {
     });
   }
 
+
   public static getClientPlanInstances(
     data: { skip: number; limit: number; active_only: boolean } = {
       skip: 0,
@@ -893,6 +895,7 @@ export class ClientService {
       active_only: false,
     }
   ) {
+
     const { skip = 0, limit = 100, active_only = false } = data;
 
     return __request(OpenAPI, {
