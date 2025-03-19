@@ -28,15 +28,9 @@ import { confirmPasswordRules, emailPattern, passwordRules } from "../utils";
 import Logo from "/assets/images/logo.png";
 
 // Terms and conditions text stored in a variable
-const TERMS_AND_CONDITIONS_TEXT = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia vehicula libero ut eleifend. Nullam diam odio, placerat at risus et, interdum lacinia diam. Maecenas congue mi ac suscipit feugiat. Etiam fringilla ex at quam tempus, ac tincidunt sem pretium. Vestibulum ut neque id eros pellentesque porta. Sed pulvinar tempor massa in porta. Ut id ex dui. Donec eleifend ultricies ipsum, eget fringilla eros tristique nec. Praesent lacinia cursus tellus at feugiat. In vitae ultricies sem. Aliquam sit amet tristique leo. Suspendisse sed libero sit amet elit vulputate semper.
-
-Quisque non nisl id elit convallis consectetur. Etiam ante ipsum, pretium id nisi sed, vestibulum vehicula eros. Duis laoreet nibh a orci vestibulum, vitae maximus nisi rutrum. Fusce vulputate maximus sapien. Morbi vel turpis urna. Integer suscipit efficitur nisl vel interdum. Donec varius facilisis magna eleifend pellentesque.
-
-Phasellus hendrerit condimentum nisl volutpat suscipit. In lacus lorem, malesuada ut egestas convallis, tincidunt quis arcu. Curabitur sagittis auctor commodo. Sed nec mauris auctor, hendrerit justo nec, malesuada velit. Quisque egestas ex euismod justo consequat ornare. Quisque blandit lorem quis cursus vehicula. Quisque augue risus, tempus a arcu eget, pharetra feugiat sapien. Nullam quis arcu a lorem tempor fringilla. Fusce vulputate metus nec semper dignissim.
-
-Cras et vulputate ipsum, ut ultrices metus. Donec rhoncus luctus vestibulum. Etiam sit amet posuere ex. Nulla non pulvinar sapien. Quisque elementum cursus aliquet. Donec rhoncus ligula tellus, ut imperdiet justo eleifend id. Nam eu convallis est, non vehicula odio. Donec vel venenatis arcu. Mauris blandit, libero in commodo faucibus, magna magna dapibus massa, ac rhoncus felis felis ullamcorper diam. Curabitur luctus consectetur risus, eu eleifend arcu eleifend sit amet. Mauris dictum rutrum quam, a volutpat mauris faucibus vel. Cras tristique egestas sapien in placerat. Pellentesque placerat volutpat nulla, non pharetra quam blandit vitae. Sed facilisis velit arcu, in facilisis neque euismod ac.
-
-Donec et ullamcorper sem, at lacinia enim. Etiam porttitor lobortis arcu, eget vehicula quam fringilla eget. Phasellus eu augue sagittis, pulvinar velit vitae, congue lacus. Ut semper augue non nibh tincidunt auctor. Curabitur metus nibh, tempor vitae posuere et, sodales eget augue. Etiam viverra metus vitae ultrices aliquet. Maecenas id enim nec purus faucibus hendrerit vitae sed diam. Duis bibendum placerat ornare. Proin varius tristique finibus. Maecenas eu hendrerit eros, non egestas tortor. Nullam commodo vestibulum lectus vel aliquet. Phasellus ac facilisis orci. Fusce posuere sapien ac sem pellentesque, rhoncus sodales velit aliquam.`;
+const TERMS_AND_CONDITIONS_TEXT = `Declara que conoce entiende y acepta los términos, requisitos y condiciones del reglamento establecido para la prestación del servicio de recreación y esparcimiento en la casa en el árbol, como también asume toda y cualquier clase de responsabilidad que se derive por los actos y conductas que realice el menor, en desarrollo y ejecución de nuestro propósito de recreación.
+Declara que conoce y asume todos los riesgos que implican cuando el ( la ) menor se involucra con otros niños y en las actividades propias de recreación. En consecuencia exime de toda responsabilidad a la casa en el árbol de cualquier evento ,accidente o inconveniente ocurrido en el que se pueda ver implicado el ( la ) menor.
+Autoriza que en caso de materializarse cualquier tipo de riesgo, los gastos o expensas que se requieran para la atención o 'tratamiento del ( la ) menor serán asumidos por usted en calidad de responsable del mismo.`;
 
 const SignUp = () => {
   const { signUpMutation } = useAuth();
@@ -239,7 +233,7 @@ const SignUp = () => {
                       htmlFor="acceptTerms"
                       className="text-sm font-medium cursor-pointer"
                     >
-                      Accept T&C
+                      I accept the Terms and Conditions
                     </label>
                   </div>
                   <button
