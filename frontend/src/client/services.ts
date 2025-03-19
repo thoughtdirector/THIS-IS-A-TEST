@@ -880,7 +880,7 @@ export class ClientService {
     });
   }
 
-  public static getClientGroups(data = {}) {
+  public static getClientGroups(data) {
     const { skip = 0, limit = 100 } = data;
     
     return __request(OpenAPI, {
@@ -913,7 +913,7 @@ export class ClientService {
     });
   }
 
-  public static getClientPlanInstances(data = {}) {
+  public static getClientPlanInstances(data) {
     const { skip = 0, limit = 100, active_only = false } = data;
     
     return __request(OpenAPI, {
