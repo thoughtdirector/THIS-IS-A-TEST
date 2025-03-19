@@ -44,6 +44,9 @@ import PlanInstanceDetail from './components/Client/PlanInstanceDetail'
 import PlanQRGenerator from './components/Client/PlanQRGenerator'
 import ChildRegister from './components/Client/ChildRegister'
 
+// Import the ParkEntryForm component
+import ParkEntryForm from './components/Client/ParkEntryForm'
+
 // Root route
 
 const rootRoute =  createRootRoute({
@@ -289,6 +292,13 @@ const childRegisterRoute = createRoute({
   component: ChildRegister,
 })
 
+// Add the park entry form route
+const parkEntryRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/client/park-entry',
+  component: ParkEntryForm,
+})
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   layoutRoute.addChildren([
@@ -314,6 +324,7 @@ const routeTree = rootRoute.addChildren([
       planInstanceDetailRoute,
       planQRGeneratorRoute,
       childRegisterRoute,
+      parkEntryRoute,
     ]),
     settingsRoute,
 
