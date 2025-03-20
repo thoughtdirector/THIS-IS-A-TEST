@@ -42,7 +42,6 @@ const DashboardLayout = () => {
   const userNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'My Plans', href: '/dashboard/client/plans', icon: Package },
-    { name: 'Park Entry Form', href: '/dashboard/client/park-entry', icon: Clipboard },
     { name: 'Make Reservation', href: '/dashboard/reservations/create', icon: Calendar },
     { name: 'Make Payment', href: '/dashboard/payments/create', icon: CreditCard },
     { name: 'Register Child', href: '/dashboard/client/register-child', icon: Users },

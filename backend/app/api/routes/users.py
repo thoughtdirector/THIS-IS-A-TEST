@@ -254,6 +254,7 @@ def register_user(
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name,
         is_active=True,
+        terms_accepted=user_in.terms_accepted
     )
     session.add(db_user)
    

@@ -73,6 +73,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name,
+        terms_accepted: acceptTerms
       },
       client_in: {
         identification: formData.identification,
@@ -233,7 +234,7 @@ const SignUp = () => {
                       htmlFor="acceptTerms"
                       className="text-sm font-medium cursor-pointer"
                     >
-                      I accept the Terms and Conditions
+                      "He leído y acepto los Términos y Condiciones"
                     </label>
                   </div>
                   <button

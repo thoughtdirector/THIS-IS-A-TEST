@@ -73,6 +73,7 @@ export type UserRegister = {
   email: string
   password: string
   full_name?: string | null
+  terms_accepted?: string | null
 }
 
 export type UserUpdate = {
