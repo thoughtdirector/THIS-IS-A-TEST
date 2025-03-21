@@ -1,12 +1,12 @@
 import uuid
 
-from pydantic import EmailStr, Json
+from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel, select, Text
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSONB, BYTEA
 from sqlalchemy_json import mutable_json_type
-from sqlalchemy import JSON, Column, ARRAY, String
+from sqlalchemy import Column, ARRAY, String
 from pgvector.sqlalchemy import Vector
 from pydantic import validator
 #Irrelevant ITEMS
@@ -589,7 +589,7 @@ class Form(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     form_type: str = Field(index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    form_data: dict = Field(default={}, sa_type=JSON)
+    form_data: str = Field(default="{}") # Stored as string
     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
 
 class FormSubmission(SQLModel):
