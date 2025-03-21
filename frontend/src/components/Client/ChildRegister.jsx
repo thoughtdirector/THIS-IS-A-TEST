@@ -152,9 +152,7 @@ const ChildRegister = () => {
     try {
       // In a real implementation, we would call an API endpoint here
       // For now, we'll just simulate a successful submission
-
-      console.log(entryData);
-
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Mock successful submission
