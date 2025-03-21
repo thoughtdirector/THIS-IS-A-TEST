@@ -68,9 +68,9 @@ const ChildRegister = () => {
     city: '',
     
     // Authorizations
-    authorize_entry: 'yes',
-    authorize_photos: 'yes',
-    authorize_marketing: 'yes',
+    authorize_entry: true,
+    authorize_photos: true,
+    authorize_marketing: true,
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,7 +131,7 @@ const ChildRegister = () => {
     const { name, value, type, checked } = e.target;
     setEntryData({
       ...entryData,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'checkbox' ? checked : type === "number" ? Number(value): value,
     });
   };
   
@@ -152,6 +152,9 @@ const ChildRegister = () => {
     try {
       // In a real implementation, we would call an API endpoint here
       // For now, we'll just simulate a successful submission
+
+      console.log(entryData);
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Mock successful submission
@@ -169,9 +172,9 @@ const ChildRegister = () => {
         entry_date: new Date().toISOString().split('T')[0],
         entry_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         city: '',
-        authorize_entry: 'yes',
-        authorize_photos: 'yes',
-        authorize_marketing: 'yes',
+        authorize_entry: true,
+        authorize_photos: true,
+        authorize_marketing: true,
       });
       
       // Navigate back to plans
@@ -479,11 +482,11 @@ const ChildRegister = () => {
                         className="flex flex-col space-y-1"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="authorize-yes" />
+                          <RadioGroupItem value={true} id="authorize-yes" />
                           <Label htmlFor="authorize-yes" className="text-xs">¿Autoriza en calidad de responsable al menor de edad el ingreso al parque?</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="authorize-no" />
+                          <RadioGroupItem value={false} id="authorize-no" />
                           <Label htmlFor="authorize-no" className="text-xs">No autorizo</Label>
                         </div>
                       </RadioGroup>
@@ -652,11 +655,11 @@ const ChildRegister = () => {
                         className="flex flex-row space-x-4"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="photos-yes" />
+                          <RadioGroupItem value={true} id="photos-yes" />
                           <Label htmlFor="photos-yes" className="text-xs">Si</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="photos-no" />
+                          <RadioGroupItem value={false} id="photos-no" />
                           <Label htmlFor="photos-no" className="text-xs">No</Label>
                         </div>
                       </RadioGroup>
@@ -670,11 +673,11 @@ const ChildRegister = () => {
                         className="flex flex-row space-x-4"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="marketing-yes" />
+                          <RadioGroupItem value={true} id="marketing-yes" />
                           <Label htmlFor="marketing-yes" className="text-xs">Si</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="marketing-no" />
+                          <RadioGroupItem value={false} id="marketing-no" />
                           <Label htmlFor="marketing-no" className="text-xs">No</Label>
                         </div>
                       </RadioGroup>
