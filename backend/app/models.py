@@ -591,3 +591,12 @@ class Form(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     form_data: dict = Field(default={}, sa_type=JSON)
     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+
+class FormSubmission(SQLModel):
+    form_type: str
+    form_data: Dict[str, Any]
+
+class SuccessResponse(SQLModel):
+    success: bool = True
+    message: str
+    data: Optional[Dict[str, Any]] = None
