@@ -1,5 +1,6 @@
+import json
 from app.api.deps import CurrentUser, SessionDep
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 
 from app.models import Form, FormSubmission, SuccessResponse
 
@@ -16,11 +17,16 @@ def create_form(
     
     Returns the ID of the created form and a success message.
     """
+
+    try:
+        serialized_form_data = json.dumps(form_submission.form_data)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Not valid JSON")
     
     # Create form object
     new_form = Form(
         form_type=form_submission.form_type,
-        form_data=form_submission.form_data,
+        form_data=serialized_form_data,
         user_id=current_user.id
     )
     
