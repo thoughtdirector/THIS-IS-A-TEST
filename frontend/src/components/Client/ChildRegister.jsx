@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Save, FileText, Clipboard, UserPlus, Camera, Users } from 'lucide-react';
-import { ClientService } from '../../client/services';
+import { ClientService, FormsService } from '../../client/services';
 import useAuth from '../../hooks/useAuth';
+import useCustomToast from '../../hooks/useCustomToast';
 
 // Import ShadCN UI components
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 const ChildRegister = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const showToast = useCustomToast();
   const [activeTab, setActiveTab] = useState('registerMember');
   
   // Family Member state
@@ -142,6 +144,19 @@ const ChildRegister = () => {
       [name]: value,
     });
   };
+
+  const submitFormMutation = useMutation({
+    mutationFn: FormsService.submitForm,
+    onSuccess: (data) => {
+      // Go back to plans
+      navigate({to: "/dashboard/client/plans"})
+      showToast(
+        "Form submited",
+        "The form has been submited successfully.",
+        "success",
+      )
+    }
+  })
   
   // Handle park entry form submission
   const handleParkEntrySubmit = async (e) => {
@@ -152,11 +167,15 @@ const ChildRegister = () => {
     try {
       // In a real implementation, we would call an API endpoint here
       // For now, we'll just simulate a successful submission
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful submission
-      alert('Entry form submitted successfully!');
+
+      console.log(entryData);
+
+      const formSubmitData = {
+        "form_type": "park entry forms",
+        "form_data": entryData
+      }
+
+      submitFormMutation.mutate(formSubmitData)
       
       // Reset form
       setEntryData({
@@ -175,8 +194,6 @@ const ChildRegister = () => {
         authorize_marketing: true,
       });
       
-      // Navigate back to plans
-      navigate({ to: '/dashboard/client/plans' });
     } catch (err) {
       setFormError(err.message || 'An error occurred during submission');
     } finally {
