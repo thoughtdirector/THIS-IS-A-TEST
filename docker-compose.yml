@@ -1,9 +1,7 @@
-# Create basic docker-compose.yml
-version: '3.8'
-
 services:
   traefik:
     image: traefik:v2.10
+    container_name: traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -14,11 +12,17 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      # Dashboard de Traefik en http://traefik.localhost:8080
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: ../docker/Dockerfile.frontend
+    container_name: frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`localhost`)"
@@ -29,6 +33,7 @@ services:
     build:
       context: ./backend
       dockerfile: ../docker/Dockerfile.backend
+    container_name: backend
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/casadearbol
     labels:
@@ -39,12 +44,14 @@ services:
 
   db:
     image: postgres:15
+    container_name: db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=casadearbol
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   postgres_data:
