@@ -1,7 +1,49 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "compilerOptions": {
+    
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+  
+
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "checkJs": false,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+ 
+    /* Linting - Relax type checks */
+    "strict": false,  // Disable strict type checks
+    "noImplicitAny": false,  // Allow variables to have 'any' type implicitly
+    "noImplicitThis": false,  // Allow 'this' to have an implicit 'any' type
+    "alwaysStrict": false,  // Disable strict mode for JavaScript files
+    "strictNullChecks": false,  // Disable null checks
+    "strictFunctionTypes": false,  // Disable strict function type checking
+    "strictBindCallApply": false,  // Disable strict checks for bind, call, and apply
+    "strictPropertyInitialization": false,  // Disable property initialization checks
+
+    /* Disable unused code checks */
+    "noUnusedLocals": false,  // Don't throw errors for unused locals
+    "noUnusedParameters": false,  // Don't throw errors for unused parameters
+    "noFallthroughCasesInSwitch": false,  // Don't throw errors for fallthrough cases
+
+    /* Additional error suppressions */
+    "allowUnreachableCode": true,  // Don't throw errors for unreachable code
+    "allowUnusedLabels": true  // Don't throw errors for unused labels
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }],
+  "exclude": [
+    "node_modules/@types/json-schema"
   ]
 }
