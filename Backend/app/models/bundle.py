@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from app.models.location import Location
 
 class Bundle(SQLModel, table=True):
-    
     bundle_id: Optional[int] = Field(default=None, primary_key=True)
     location_id: int = Field(foreign_key="location.location_id")
     name: str = Field(max_length=100)
@@ -18,5 +17,5 @@ class Bundle(SQLModel, table=True):
     is_active: Optional[bool] = Field(default=True)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
-    location: "Location" = Relationship()
+    location: "Location" = Relationship(back_populates="bundles")
     bundle_services: List["BundleService"] = Relationship(back_populates="bundle")

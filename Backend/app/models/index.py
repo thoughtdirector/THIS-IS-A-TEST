@@ -1,4 +1,3 @@
-# Import all models to ensure they're loaded
 from app.models.base_model import BaseModel
 from app.models.role import Role
 from app.models.location import Location

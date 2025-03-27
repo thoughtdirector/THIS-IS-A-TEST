@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from app.models.session import Session
 
 class User(BaseModel, table=True):
-   
     user_id: Optional[int] = Field(default=None, primary_key=True)
     role_id: int = Field(foreign_key="role.role_id")
     location_id: Optional[int] = Field(foreign_key="location.location_id", default=None)
@@ -26,12 +25,13 @@ class User(BaseModel, table=True):
     document_number: str = Field(max_length=30)
     terms_accepted: Optional[bool] = Field(default=False)
     
-    role: "Role" = Relationship()
-    location: Optional["Location"] = Relationship()
+    role: "Role" = Relationship(back_populates="users")
+    location: Optional["Location"] = Relationship(back_populates="users")
     children: List["Child"] = Relationship(back_populates="parent")
-    
-    # Remove foreign_key argument and handle these separately
-    created_services: List["Service"] = Relationship()
+    created_services: List["Service"] = Relationship(sa_relationship_kwargs={"foreign_keys": "Service.created_by"})
     orders: List["Order"] = Relationship(back_populates="user")
-    credits: List["Credit"] = Relationship()
-    staff_sessions: List["Session"] = Relationship(back_populates="staff")
+    credits: List["Credit"] = Relationship(back_populates="parent")
+    assigned_zones: List["Zone"] = Relationship(back_populates="staff", sa_relationship_kwargs={"foreign_keys": "Zone.staff_id"})
+    staff_sessions: List["Session"] = Relationship(back_populates="staff", sa_relationship_kwargs={"foreign_keys": "Session.staff_id"})
+    check_ins: List["Visit"] = Relationship(sa_relationship_kwargs={"foreign_keys": "Visit.check_in_by"})
+    check_outs: List["Visit"] = Relationship(sa_relationship_kwargs={"foreign_keys": "Visit.check_out_by"})

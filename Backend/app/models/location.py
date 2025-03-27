@@ -9,11 +9,9 @@ if TYPE_CHECKING:
     from app.models.service import Service
     from app.models.user import User
     from app.models.zone import Zone
+    from app.models.bundle import Bundle
 
-
-# Locations Model
 class Location(BaseModel, table=True):
-    
     location_id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=100)
     address: str
@@ -30,3 +28,4 @@ class Location(BaseModel, table=True):
     orders: List["Order"] = Relationship(back_populates="location")
     credits: List["Credit"] = Relationship(back_populates="location")
     visits: List["Visit"] = Relationship(back_populates="location")
+    bundles: List["Bundle"] = Relationship(back_populates="location")

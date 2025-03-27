@@ -10,11 +10,10 @@ if TYPE_CHECKING:
     from app.models.session import Session
 
 class Service(SQLModel, table=True):
-    
     service_id: Optional[int] = Field(default=None, primary_key=True)
     location_id: int = Field(foreign_key="location.location_id")
     zone_id: Optional[int] = Field(foreign_key="zone.zone_id", default=None)
-    service_type: str = Field(max_length=50)
+    service_type: str = Field(max_length=50)  # 'play_time', 'class', 'party', 'field_trip'
     name: str = Field(max_length=100)
     description: Optional[str] = None
     duration_minutes: int
@@ -26,8 +25,8 @@ class Service(SQLModel, table=True):
     is_active: Optional[bool] = Field(default=True)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
-    location: "Location" = Relationship()
-    zone: Optional["Zone"] = Relationship()
-    creator: "User" = Relationship()
+    location: "Location" = Relationship(back_populates="services")
+    zone: Optional["Zone"] = Relationship(back_populates="services")
+    creator: "User" = Relationship(back_populates="created_services", sa_relationship_kwargs={"foreign_keys": "Service.created_by"})
     sessions: List["Session"] = Relationship(back_populates="service")
     bundle_services: List["BundleService"] = Relationship(back_populates="service")
