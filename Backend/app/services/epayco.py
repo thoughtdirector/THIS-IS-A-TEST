@@ -6,7 +6,7 @@ from typing import Optional
 # This is a simplified mock implementation for demonstration purposes
 
 def generate_payment_url(
-    payment_id: uuid.UUID,
+    payment_id: int,
     amount: float,
     description: str,
     client_name: str,
@@ -61,9 +61,9 @@ def process_webhook(webhook_data: dict) -> dict:
     """
     # Mock implementation - in production, validate signature and data
     return {
-        "payment_id": webhook_data.get("x_id_invoice"),
+        "order_id": webhook_data.get("x_id_invoice"),
         "transaction_id": webhook_data.get("x_transaction_id"),
         "status": webhook_data.get("x_response"),
         "amount": webhook_data.get("x_amount"),
         "date": webhook_data.get("x_transaction_date")
-    } 
+    }
